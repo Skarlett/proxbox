@@ -1,0 +1,65 @@
+{
+    "providers": {
+        "my-proxy.com": {
+            "renewal": 172800,
+            "types": {"socks5": [
+                "https://www.my-proxy.com/free-socks-5-proxy.html",
+                "https://www.my-proxy.com/free-socks-4-proxy.html"
+            ]},
+            "jsgen":false,
+            "use": true
+        },
+        "sockslist.net": {
+            "renewal": 28800,
+            "types": {
+              "socks5":[
+                "https://sockslist.net/proxy/server-socks-hide-ip-address",
+                "https://sockslist.net/proxy/server-socks-hide-ip-address/2",
+                "https://sockslist.net/proxy/server-socks-hide-ip-address/3",
+                "https://sockslist.net/proxy/server-socks-hide-ip-address/4",
+                "https://sockslist.net/proxy/server-socks-hide-ip-address/5"
+              ]
+            },
+            "jsgen": false,
+            "use": true
+        },
+        "socks-proxy.net": {
+            "renewal": 28800,
+            "types" :{
+              "socks5": ["https://www.socks-proxy.net/"]
+            },
+            "jsgen": false,
+            "use": true
+        },
+        "proxylistplus.com": {
+          "renewal": 86400,
+          "type": {
+            "socks5":
+              ["https://list.proxylistplus.com/Socks-List-1",
+              "https://list.proxylistplus.com/Socks-List-2",
+              "https://list.proxylistplus.com/Socks-List-3",
+              "https://list.proxylistplus.com/Socks-List-4"]
+          },
+          "jsgen": false,
+          "use": true
+        },
+        "xroxy.com": {
+            "renewal": 86400,
+            "type": {
+              "socks5": [
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=0#table",
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=1#table",
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=2#table",
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=3#table",
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=4#table",
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=5#table",
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=6#table",
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=7#table",
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=8#table",
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=9#table"
+              ]},
+            "jsgen":false,
+            "use": true
+        }
+    }
+}
