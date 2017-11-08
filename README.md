@@ -9,7 +9,7 @@ What it does, what it doesn't.
   + It only takes an IP and port Pair and the rest is done inside of the system.
   + Its pretty configurable, theres still lots of stuff to add.
 
-## What it can't do
+## What it don't
   - It can't scan proxies with authenification enabled.
 
 ## What we've tested
