@@ -77,4 +77,4 @@ This is also the case you should use if `px` ever returns `"ProxyMiner isn't onl
 
 
 ##### Notes
-Keep in mind this project is still in development and should be considered "as is" with no warranty of operation, use or responsibility to it's use. Further more, I wish you all a good day.
+Keep in mind this project is still in development and should be considered "as is" with no warranty of operation.
