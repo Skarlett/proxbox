@@ -41,5 +41,33 @@ This will install the script under /etc/init.d/px-daemon, run it through a user 
     python src/pxf.py &
     ./px -i
 
+#### Command line tools
+    [-h --help]
+    [-g --get,
+      ( -b | --bot Formats for easy scraping)
+      (-nc | --no-check Doesnt check proxies for being online before giving them)
+      (-a | --all Doesnt check proxies are marked as online before giving them)
+      (-t | --time-out [int] inserts timeout value)
+    ]
+    [-i --info] shows current state of program 
+    [-p --pinfo (UUID)] shows information on a proxy based on UUID
+    [-sc --scrape (-f | --force) Forces a proxy scrape] scrape your provider sources, and add them to the db
+    [-t --total] get total number of proxies in data
+    [-oc --online-count] returns number of proxies marked alive
+    [--uptime] returns the time at which the service was last rebooted
+    [-a --add (URL/FilePath)] scrapes and adds to proxies in database
+    [-ap --add-provider (scrape time) (URL)] adds URLs to providers list
+    [-dp --del-provider (UUID)] removes URL to providers list
+    [--providers] Shows statistics on each provider
+
+After starting the `px-daemon` service or running `src/pxf.py` It will attempt to fill the database with proxies from the providers list. 
+Any provider you add during it's runtime will delayed shortly before scraped, while at boot time will be appended immdiately and soon after will be scraped.
+
+To start the `px-daemon` just in case it stopped you can run the following.
+This is also the case you should use if `px` ever returns `"ProxyMiner isn't online."`
+
+    sh /etc/init.d/px-daemon start
+
+
 ##### Notes
 Keep in mind this project is still in development and should be considered "as is" with no warranty of operation, use or responsibility to it's use. Further more, I wish you all a good day.
