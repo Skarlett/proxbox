@@ -1,6 +1,6 @@
 # px
 This tool is used for collecting, storing and checking proxy servers.
-What it does, what it doesn't.
+Current Version: 1.0.3
 
 ## What it do
   + It scrapes proxies off webpages, you can find this etc/data/providers.json, the command line too also allows easy adding and removing
@@ -29,3 +29,16 @@ What it does, what it doesn't.
 
 ## Implementation of install
   So I figured that the safest way to do this was to make a user called `px` and then make no files actually owned by it, but go ahead and run the daemon as that user so if there were to an injection in `px-daemon` then, it would atleast miminalize the fact they no longer have root privelleges.
+
+### Global Installation
+This will install the script under /etc/init.d/px-daemon, run it through a user named PX and install utility commands like `px`, `geoip`, and `pxyscrape` into `/usr/sbin`
+
+    sudo ./install.sh
+    px -i
+
+### Local run
+    cd /path/to/dir
+    python src/pxf.py &
+    ./px -i
+
+
