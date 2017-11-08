@@ -68,6 +68,10 @@ This is also the case you should use if `px` ever returns `"ProxyMiner isn't onl
 
     sh /etc/init.d/px-daemon start
 
+##### Errors and output
+Errors: `/var/log/px-daemon.err`
+stdout: `/var/log/px-daemon.log`
+
 
 ##### Notes
 Keep in mind this project is still in development and should be considered "as is" with no warranty of operation, use or responsibility to it's use. Further more, I wish you all a good day.
