@@ -28,7 +28,10 @@ Current Version: 1.0.3
   + Its probably common knowledge, but we never explicitly hardcoded each commands, so it's probably more than possible for a raw injection of python into the implementation of the socket structure that communicates `px` and `pxf.py/px-daemon`
 
 ### Implementation of install
-  So I figured that the safest way to do this was to make a user called `px` and then make no files actually owned by it, but go ahead and run the daemon as that user so if there were to an injection in `px-daemon` then, it would atleast miminalize the fact they no longer have root privelleges.
+  So I figured that the safest way to do this was to make a user called `px` and then make no files actually owned by it, but go ahead and run the daemon as that user so if there were to an injection in `px-daemon` then, it would atleast miminalize the fact they no longer have root privelleges. Further more since it would be a socket injection it is highly recommended to run this on local host, with the port its listening on closed.
+
+#### Configuration
+You will find in `src/Settings.py` configuration for the program, these options are yet to be documented due to the fact they are ever changing. Until further notice, there will be no efforts to document them other than their describing names.
 
 #### Global Installation
 This will install the script under /etc/init.d/px-daemon, run it through a user named PX and install utility commands like `px`, `geoip`, and `pxyscrape` into `/usr/sbin`
