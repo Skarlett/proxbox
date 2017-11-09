@@ -1,6 +1,10 @@
 # px
 This tool is used for collecting, storing and checking proxy servers.
 Current Version: 1.0.3
+### Change list
+  + Added sqlite3worker
+  
+
 
 ### What it do
   + It scrapes proxies off webpages, you can find this etc/data/providers.json, the command line too also allows easy adding and removing
@@ -13,13 +17,16 @@ Current Version: 1.0.3
   - It can't scan proxies with authenification enabled.
 
 ### What we've tested
-  + It runs on linux
-  + It can run as a service/daemon
-  + Its fine with huge amounts of shell calls
+  + It runs on linux. Debian like distros. Modify it how you please to run on your own system
+  + It can run as a service/daemon (Atleast it did on ubuntu and debian)
+  + Its fine with huge amounts of shell calls on `px`
 
 ### What we've added and never tried testing
   + We added phantomjs for the fact that some web pages will generate via javascript. Never tried using it.
   + Numerous amounts of commands written into `px` and connected to `commands.py`
+     - Here's a list of all the buggy ones we know of
+     - `px -sc -f`
+     - `px -a`
 
 ### Bugs
   + Sometimes theres a weird Provider Object bug that says theres no proxies to be found from that provider. Still working on it.
