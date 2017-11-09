@@ -16,7 +16,7 @@ chmod +x "$BASEDIR/px"
 echo "Attempting to install as a service/daemon on the system. Only works on linux."
 echo "Adding user px..."
 useradd -M px
-sudo deluser px sudo # No sudo for you
+deluser px sudo # No sudo for you
 
 mkdir /opt/px
 
