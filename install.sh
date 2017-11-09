@@ -22,7 +22,7 @@ mkdir /opt/px
 
 echo "Copying files to install directory"
 
-cp -R $BASEDIR /opt/px
+cp -R "$BASEDIR/*" /opt/px/
 
 echo "Creating soft links in /usr/sbin"
 
