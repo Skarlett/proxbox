@@ -1,6 +1,10 @@
 # px
 This tool is used for collecting, storing and checking proxy servers.
 Current Version: 1.0.3
+### Change list
+  + Added sqlite3worker
+  
+
 
 ### What it do
   + It scrapes proxies off webpages, you can find this etc/data/providers.json, the command line too also allows easy adding and removing

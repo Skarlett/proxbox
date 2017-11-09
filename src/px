@@ -1,17 +1,16 @@
 #!/usr/bin/python
 from socket import socket
 from sys import argv
+from Settings import local_conn
 import struct
 
-
-LOCAL_CON = ('127.0.0.1', 52312)
 
 
 help_msg = '[-h --help]\n' \
            '[-g --get,\n' \
            '  ( -b | --bot Formats for easy scraping)\n' \
            '  (-nc | --no-check Doesnt check proxies for being online before giving them)\n' \
-           '  (-a | --all Doesnt check proxies are marked as giving them)\n' \
+           '  (-a | --all Doesnt check proxies are marked as online before giving them)\n' \
            '  (-t | --time-out [int] inserts timeout value)\n' \
            ']\n' \
            '[-i --info] shows current state of program \n' \
@@ -22,7 +21,7 @@ help_msg = '[-h --help]\n' \
            '[--uptime] returns the time at which the service was last rebooted\n' \
            '[-a --add (URL/FilePath)] scrapes and adds to proxies in database\n' \
            '[-ap --add-provider (scrape time) (URL)] adds URLs to providers list\n' \
-           '[-dp --del-provider (URL)] removes URL to providers list\n' \
+           '[-dp --del-provider (UUID)] removes URL to providers list\n' \
            '[--providers] Shows statistics on each provider\n' \
            
 
@@ -68,7 +67,7 @@ if __name__ == '__main__':
     s = socket()
     s.settimeout(65565**2)
     try:
-      s.connect(LOCAL_CON)
+      s.connect(local_conn)
     except Exception:
       print('ProxyMiner isn\'t online.')
       exit(1)
@@ -143,9 +142,6 @@ if __name__ == '__main__':
       send_msg(s, 'online_cnt')
       print(recv_msg(s))
     
-    elif argv[1] in ['-oc', '--online-count']:
-      send_msg(s, 'online_cnt')
-      print(recv_msg(s))
     
     elif argv[1] in ['-a', '--add']:
       # Not done.
@@ -154,10 +150,12 @@ if __name__ == '__main__':
       for i, arg in enumerate(argv):
         if arg == tag:
           try:
-            msg += _seperator.join(argv[i:])
+            msg = _seperator.join([msg]+argv[i:])
           except IndexError:
             print('Add function \'%s\', has no value attached' % tag)
             exit(1)
+      send_msg(s, msg)
+      print recv_msg(s)
 
     elif argv[1] in ['--uptime']:
       send_msg(s, 'uptime')
@@ -168,7 +166,6 @@ if __name__ == '__main__':
       print(recv_msg(s))
     
     elif argv[1] in ['--geo']:
-      #send_msg('geo')
       msg = 'geo'
       tag = [x for x in ['--geo'] if x in argv][0]
       for i, arg in enumerate(argv):

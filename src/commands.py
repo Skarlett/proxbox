@@ -8,11 +8,10 @@ import time
 import Settings
 
 
-
 class commands():
   def __init__(self, parent):
     # ProxyFrame
-    self.__parent = parent # probably a raw injection exploit here,
+    self.parent = parent # probably a raw injection exploit here,
     # should sub class
     # should implement private variable functionality in some way
     # but instead i use the hidden pretext wrapper in the python language.
@@ -21,25 +20,25 @@ class commands():
     # TODO
     
     if Settings.raw_sql_exec:
-      self.execute = lambda req: self.__parent._db.execute(req).fetchall()
+      self.execute = lambda req: self.parent._db.execute(req)
     else:
       self.execute = lambda _: None
       
       
   def online_cnt(self):
-    return self.__parent.online()
+    return self.parent.online()
   
   def total_cnt(self):
-    return self.__parent.totalProxies()
+    return self.parent.totalProxies()
   
   def info(self):
     return 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: [%s] [%s]' %\
-           (self.total_cnt(), self.online_cnt(), self.__parent.mine_cnt, self.uptime(), str(self.__parent.last_scraped[0]),
-            h_time(time.time()-float(self.__parent.last_scraped[1])))
+           (self.total_cnt(), self.online_cnt(), self.parent.mine_cnt, self.uptime(), str(self.parent.last_scraped[0]),
+            h_time(time.time()-float(self.parent.last_scraped[1])))
   
   def pinfo(self, req):
     # get info about a specific proxy by uuid
-    proxy = Proxy(self.__parent, *self.__parent._db.execute('SELECT * FROM PROXY_LIST WHERE UUID = ?', (req,)).fetchone())
+    proxy = Proxy(self.parent, *self.parent._db.execute('SELECT * FROM PROXY_LIST WHERE UUID = ?', (req,))[0])
     msg = 'UUID: ' + str(proxy.uuid) + '\n'
     msg += 'Online: %s\n' % str(proxy.online)
     msg += 'Reliance rate: %f alive\n' % float(proxy.reliance())
@@ -51,7 +50,7 @@ class commands():
     if bot and give_geo_info:
       give_geo_info = False
     
-    for i, proxy in enumerate(self.__parent.get(cnt, check_alive=check_alive, online=online,
+    for i, proxy in enumerate(self.parent.get(cnt, check_alive=check_alive, online=online,
                                               timeout=timeout, protocol=protocol)):
       if not bot:
         msg += 'UUID: '+str(proxy.uuid)+'\n'
@@ -72,19 +71,19 @@ class commands():
     return msg
   
   def scrape(self):
-    return self.__parent.scrape()
+    return self.parent.scrape()
   
   def uptime(self):
-    return h_time(self.__parent.uptime())
+    return h_time(self.parent.uptime())
   
   def providers(self):
     msg = ''
-    for i, provider in enumerate(self.__parent.factory.providers):
-      last_scrape, alive, dead = self.__parent._db.provider_stats(provider)
-      total = self.__parent._db.execute('SELECT Count(*) from PROXY_LIST where PROVIDER = ?', (provider.uuid, )).fetchone()[0]
+    for i, provider in enumerate(self.parent.factory.providers):
+      last_scrape, alive, dead = self.parent._db.provider_stats(provider)
+      total = self.parent._db.execute('SELECT Count(*) from PROXY_LIST where PROVIDER = ?', (provider.uuid, ))[0][0]
       msg += provider.uuid+'\n\tReliance: %f\n\tAlive: %d\n\tDead: %d\n\tContributed: %d\n\tLast scraped: %s' %\
                            (percentage(alive, alive+dead), alive, dead, total, h_time(time.time()-float(last_scrape)))
-      if len(self.__parent.factory.providers)-1 >= i:
+      if len(self.parent.factory.providers)-1 >= i:
         msg += '\n'
     return msg
   
@@ -97,26 +96,27 @@ class commands():
         if req.startswith('http'):
           data = get(req).content
           for ip, port in IPPortPatternGlobal.findall(data):
-            self.__parent._db.add(ip, port, commit=False, provider="User_Input")
-          self.__parent._db.commit()
+            self.parent._db.add(ip, port, provider=req.split('/')[2])
+          
         else:
           if path.isfile(req):
             with open(req) as f:
               for l in f:
                 for ip, port in IPPortPatternLine.findall(l):
-                  self.__parent._db.add(ip, port, commit=False)
-            self.__parent._db.commit()
+                  self.parent._db.add(ip, port, provider="local_system")
+            
       return 'Added.'
     else: return 'Needs more args.'
     
-  def add_provider(self, renewal, *urls):
+  def add_provider(self, renewal, jsgen=False, *urls):
     if urls:
       try:
         provider = urls[0].split(':')[2:].split('/', 1)[0]
       except:
         provider = urls[0]
       metaurl = {'nonspecific': list(urls)}
-      self.__parent.factory.add(provider=provider, urls=metaurl, renewal=renewal)
+      self.parent.factory.add(provider=provider, urls=metaurl, renewal=renewal, jsgen=jsgen)
+      self.parent.factory.save()
       return 'Added.'
     else:
       return 'Needs more args.'
@@ -124,9 +124,8 @@ class commands():
   def del_provider(self, *provider):
     msg = ''
     for x in provider:
-      msg += x+':'+str(self.__parent.factory.remove(x, save=False))
-      self.__parent._db.execute('DELETE FROM RENEWAL WHERE UUID = ?', (x,))
-    self.__parent.factory.save()
-    self.__parent._db.commit()
+      msg += x+':'+str(self.parent.factory.remove(x, save=False))
+      self.parent._db.execute('DELETE FROM RENEWAL WHERE UUID = ?', (x,))
+    self.parent.factory.save()
     return msg
    

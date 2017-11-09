@@ -26,7 +26,12 @@ for d in [etc_folder, bin_folder, data_folder, backup_folder]:
     mkdir(d)
 
 
+###
+# Constants
+####
 public_ip = requests.get('http://ipv4bot.whatismyipaddress.com/').content.strip()
+version = "1.0.3"
+_version = 0
 
 ##
 # File setup
@@ -46,8 +51,7 @@ phantomjs_binary = path.join(bin_folder, 'phantomjs')
 
 if not path.isfile(providers):
   logging.info('retrieving providers.json into '+str(providers))
-  urlretrieve('https://gist.githubusercontent.com/Skarlett/7b1cb77b7373f29047b70981e0cc0156/raw/'
-              'c7ac51a440e7186cebee9813f0cead0c2b9a5a7e/providers.json', providers)
+  urlretrieve('https://raw.githubusercontent.com/Skarlett/px/master/etc/data/providers.json', providers)
 
 #################
 # Configuration #

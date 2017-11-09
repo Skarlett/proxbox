@@ -26,21 +26,20 @@ class Proxy:
     self.last_mined_success = float(last_mined_success)
     self.provider = provider
   
-  def mine(self, timeout=5, commit=True):
+  def mine(self, timeout=5):
     self.parent.mine_cnt += 1
     if not self.protocol:
       protocol = discover_protocol(self.ip, self.port, timeout=timeout)
       if protocol:
         self.parent._db.modify(self.uuid, 'PROTOCOL', protocol)
-        self.parent._db.commit()
-        self.checked(True, commit=commit)
+        self.checked(True)
       else:
-        self.checked(False, commit=commit)
+        self.checked(False,)
     else:
       if self.is_alive(timeout=timeout):
-        self.checked(True, commit=commit)
+        self.checked(True)
       else:
-        self.checked(False, commit=commit)
+        self.checked(False)
     self.parent._db.modify(self.uuid, 'LAST_MINED', str(time.time()))
     
     if Settings.remove_when_total <= self.alive_cnt + self.dead_cnt:
@@ -48,9 +47,8 @@ class Proxy:
         self.die()
   
   def die(self):
-    self.parent._db.modify(self.uuid, 'REMOVE', 1, commit=False)
+    self.parent._db.modify(self.uuid, 'REMOVE', 1)
     self.parent._db.execute('UPDATE RENEWAL SET DEAD_CNT = DEAD_CNT + %d WHERE UUID = ?' % self.dead_cnt, (self.provider,))
-    self.parent._db.commit()
     
   def is_alive(self, timeout=30):
     s = socket.socket()
@@ -62,30 +60,25 @@ class Proxy:
     s.close()
     return True
   
-  def checked(self, result, commit=True):
+  def checked(self, result):
     '''
     Adds dead or alive count to db
     :param result: bool
     :return: none
     '''
     
-    minor_commit = False
-    
     if result:
       method = 'ALIVE_CNT'
       if not self.online:
-        self.parent._db.modify(self.uuid, 'ONLINE', 1, commit=minor_commit)
+        self.parent._db.modify(self.uuid, 'ONLINE', 1)
         self.online = True
     else:
       method = 'DEAD_CNT'
       if self.online:
-        self.parent._db.modify(self.uuid, 'ONLINE', 0, commit=minor_commit)
+        self.parent._db.modify(self.uuid, 'ONLINE', 0)
         self.online = False
       
     self.parent._db.execute('UPDATE PROXY_LIST SET %s = %s + 1 WHERE UUID = ?' % (method, method), (self.uuid,))
-
-    if commit:
-      self.parent._db.commit()
     
   def reliance(self):
     try:

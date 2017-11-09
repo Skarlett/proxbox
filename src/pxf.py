@@ -7,7 +7,7 @@ import time
 import Queue
 import logging
 import socket
-import sqlite3
+from sqlite3worker import Sqlite3Worker
 from datetime import datetime
 from threading import Thread
 from os import path
@@ -19,7 +19,7 @@ import providers
 
 RUNNING = True
 
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 
 # logging = logging.Logger('main.log', 10)
 
@@ -44,7 +44,7 @@ __version__ = '1.0.3'
 # [X] directly connect skeleton.py to commands
 # [X] enforce uuid in command add providers
 # [X] converge factory and proxyframe so both providers file and database are purged
-# [ ] switch over to sqlite3worker eventually, maybe a modified version.
+# [X] switch over to sqlite3worker eventually, maybe a modified version.
 # [ ] massscan le internet, once i figure out how to collect banners.
 # [ ] optimize scanning ips in providers
 
@@ -113,15 +113,37 @@ class Communicate_CLI(Thread):
   def run(self):
     self.running = True
     while self.running:
-      s, addr = self.s.accept()
-      self.parent._queryContainer.put(User(s, addr))
+      user = User(*self.s.accept())
+      l = user.recv_msg().split(':::')
+      cmd = l[0]
+      args = l[1:] or list()
 
+      for i, x in enumerate(args):
+        if x.lower() == 'true':
+          args[i] = True
+        elif x.lower() == 'false':
+          args[i] = False
+  
+        elif x.isdigit():
+          args[i] = int(x)
+
+      args = tuple(args)
+
+      if not cmd.lower() == 'reload':
+        if hasattr(self.parent.commands, cmd):
+          resp = getattr(self.parent.commands, cmd)(*args)
+          if type(resp) in [str, unicode]:
+            resp = resp.encode('ascii', 'ignore')
+          else:
+            resp = str(resp)
+          user.send_msg(resp.strip())
+      user.s.close()
  
-class ProxyFrameDB(sqlite3.Connection):
+class ProxyFrameDB(Sqlite3Worker):
   def __init__(self, fp):
     self.fp = fp
-    sqlite3.Connection.__init__(self, fp)
-    r = self.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='PROXY_LIST';").fetchone()
+    Sqlite3Worker.__init__(self, fp)
+    r = self.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='PROXY_LIST';")[0]
     if not r:
       self.execute('''CREATE TABLE PROXY_LIST(
         UUID INTEGER PRIMARY KEY,
@@ -147,17 +169,17 @@ class ProxyFrameDB(sqlite3.Connection):
         DEAD_CNT
       );
       ''')
-      self.commit()
+      
       self.first_run = True
     else:
       self.first_run = False
       
   def getTotal(self):
     r = self.execute('SELECT Count(*) FROM PROXY_LIST')
-    return int(r.fetchone()[0])
+    return int(r[0][0])
   
   def add(self, ip, port, protocol=None, user=None, pw=None, alive_cnt=0, dead_cnt=0,
-          online=False, commit=True, provider=None):
+          online=False, provider=None):
       if ip and port:
         self.execute(
           '''INSERT INTO PROXY_LIST(
@@ -171,27 +193,26 @@ class ProxyFrameDB(sqlite3.Connection):
               int(online), alive_cnt, dead_cnt, provider
             )
           )
-        if commit:
-          self.commit()
+        
+          
    
     
-  def remove(self, uuid, commit=True):
+  def remove(self, uuid):
     self.execute('DELETE FROM PROXY_LIST WHERE UUID=?;', (uuid,))
-    if commit:
-      self.commit()
+      
   
   def provider_stats(self, provider):
     dead = alive = 0
-    for x in self.execute('SELECT * FROM PROXY_LIST WHERE PROVIDER = ?', (provider.uuid,)).fetchall():
+    for x in self.execute('SELECT * FROM PROXY_LIST WHERE PROVIDER = ?', (provider.uuid,)):
       p = Proxy(self, *x)
       dead += p.dead_cnt
       alive += p.alive_cnt
-    prev, epoch = self.execute('SELECT DEAD_CNT, EPOCH FROM RENEWAL WHERE UUID = ?', (provider.uuid,)).fetchone()
+    prev, epoch = self.execute('SELECT DEAD_CNT, EPOCH FROM RENEWAL WHERE UUID = ?', (provider.uuid,))[0]
     
     return epoch, alive, dead
     
     
-  def modify(self, uuid, var, value, commit=True):
+  def modify(self, uuid, var, value):
     self.execute(
       '''
       UPDATE PROXY_LIST
@@ -200,11 +221,8 @@ class ProxyFrameDB(sqlite3.Connection):
       (value, uuid)
     )
     
-    if commit:
-      self.commit()
   
   def backup(self, to):
-    self.commit()
     try:
       with open(self.fp, 'rb') as f_in, gzip.open(to, 'wb') as f_out:
         shutil.copyfileobj(f_in, f_out)
@@ -212,26 +230,27 @@ class ProxyFrameDB(sqlite3.Connection):
     except: return False
   
 class ProxyFrame:
-  def __init__(self, proxyDbLoc, allow_update=True):
+  def __init__(self, proxyDbLoc):
     self._db = ProxyFrameDB(proxyDbLoc)
     
     # Extra stuff
     self.mine_cnt = 0
-    self.responses = {}
     self._start_time = time.time()
-    self._queryContainer = Queue.Queue()
-    self.commands = commands.commands(self)
-    self.communicate = Communicate_CLI(self)
     self.factory = providers.Factory(Settings.providers)
     self.last_scraped = self.find_last_scraped()
-    self._tasks = [self.process_communication, self.scrape, self.backup]
-    #
+    
+    self._tasks = [
+      self.scrape,
+      self.backup
+    ]
+    
+    self.commands = commands.commands(self)
+    self.communicate = Communicate_CLI(self)
     # start up and check database for first run.
     
     if self._db.first_run or self._db.getTotal() <= 0:
-      if allow_update:
-        logging.error('Not enough proxies in DB, running proxy scrape first.')
-        self.scrape(True)
+      logging.error('Not enough proxies in DB, running proxy scrape first.')
+      self.scrape(True)
   
     #################
     #     Utils
@@ -243,7 +262,7 @@ class ProxyFrame:
     '''
     latest_epoch = 0
     provider = None
-    for row in self._db.execute('SELECT * FROM RENEWAL').fetchall():
+    for row in self._db.execute('SELECT * FROM RENEWAL'):
       uuid, epoch, deadcnt = row
       if epoch > latest_epoch:
         latest_epoch = epoch
@@ -266,7 +285,7 @@ class ProxyFrame:
     '''
     :return: int; returns total number of proxies marked as online in the database
     '''
-    return self._db.execute('SELECT Count(*) FROM PROXY_LIST WHERE ONLINE = 1').fetchone()[0]
+    return self._db.execute('SELECT Count(*) FROM PROXY_LIST WHERE ONLINE = 1')[0][0]
 
   def reload(self):
     '''
@@ -310,7 +329,7 @@ class ProxyFrame:
     ctr = 0
     
     for result in self.factory.providers:
-      data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,)).fetchone()
+      data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))[0]
       
       if data:
         _, epoch, _ = data
@@ -336,21 +355,13 @@ class ProxyFrame:
         if len(result.proxies) > 0 and result.use:
           ctr += len(result.proxies)
           for ip, port in result.proxies:
-            self._db.add(ip, port, commit=False, provider=result.uuid)
-          # last_scrape = time.time()
+            self._db.add(ip, port, provider=result.uuid)
         else:
           logging.warn('Failed provider [{}] Dumping object into logs.\n{}\n'.format(result.uuid.upper(), vars(result)))
           
-          print vars(result)
-          # last_scrape = 0
-          # last_scrape = 0
-          # for x in self.factory.providers:
-          #   if x.uuid == result.uuid:
-          #     x.use = False
 
         self._db.execute('UPDATE RENEWAL SET EPOCH = ? WHERE UUID = ?', (time.time(), result.uuid))
         self.last_scraped = (result.uuid, time.time())
-      self._db.commit()
     logging.info('Added %d to PXFrame.' % ctr)
     return ctr
   
@@ -364,47 +375,6 @@ class ProxyFrame:
           logging.exception('Failed to do task '+str(x))
       else:
         x()
-  
-  def process_communication(self):
-    '''
-    Iterates through interruption requests and serves clients data based on input
-    :return: None
-    '''
-    #print "queue empty: "+str(self._queryContainer.empty())
-    
-    while not self._queryContainer.empty():
-      user = self._queryContainer.get_nowait()
-      
-      l = user.recv_msg().split(':::')
-      cmd = l[0]
-      args = l[1:] or list()
-      
-      for i, x in enumerate(args):
-        if x.lower() == 'true':
-          args[i] = True
-        elif x.lower() == 'false':
-          args[i] = False
-
-        elif x.isdigit():
-          args[i] = int(x)
-        
-      args = tuple(args)
-      
-      if not cmd.lower() == 'reload':
-        if hasattr(self.commands, cmd):
-          
-          resp = getattr(self.commands, cmd)(*args)
-          #print "executed command"
-          if type(resp) in [str, unicode]:
-            resp = resp.encode('ascii', 'ignore')
-          else:
-            resp = str(resp)
-          #print "sent."
-          user.send_msg(resp.strip())
-      
-      else:
-        self.reload()
-      user.s.close()
     
     
   def get(self, cnt=1, check_alive=True, online=True, timeout=10, protocol='nonspecific'):
@@ -427,23 +397,22 @@ class ProxyFrame:
           sql += ' AND WHERE PROTOCOL = '+protocol.lower()
       sql += ' ORDER BY RANDOM() LIMIT '+str(cnt)
       
-      data = self._db.execute(sql).fetchall()
+      data = self._db.execute(sql)
       for row in data:
         if row:
           proxy = Proxy(self, *row)
           if check_alive:
             if proxy.is_alive(timeout):
-              proxy.checked(True, commit=False)
+              proxy.checked(True)
               valid_response += 1
               yield proxy
             else:
-              proxy.checked(False, commit=False)
+              proxy.checked(False)
           else:
             valid_response += 1
             yield proxy
         if valid_response >= cnt:
           break
-      self._db.commit()
       if valid_response >= cnt:
         break
     
@@ -477,10 +446,10 @@ class ProxyFrame:
       #   self._db.remove(proxy.uuid)
       self.do_tasks()
     
-    self._db.commit()
     
 
 if __name__ == '__main__':
+  print "loading from "+Settings.data_folder
   pxf = ProxyFrame(Settings.database)
   while RUNNING:
     try:

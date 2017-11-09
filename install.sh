@@ -8,15 +8,18 @@ if [ "$EUID" -ne 0 ]
 fi
 echo "Starting..."
 
+python -m pip install setuptools
+python -m pip install sqlite3worker
+
 chmod +x "$BASEDIR/src/pxf.py"
 chmod +x "$BASEDIR/src/skeleton.py"
 chmod +x "$BASEDIR/src/geo.py"
-chmod +x "$BASEDIR/px"
+chmod +x "$BASEDIR/src/px"
 
 echo "Attempting to install as a service/daemon on the system. Only works on linux."
 echo "Adding user px..."
 useradd -M px
-sudo deluser px sudo # No sudo for you
+deluser px sudo # No sudo for you
 
 mkdir /opt/px
 
@@ -32,7 +35,7 @@ echo "Made command pxyscrape"
 ln -s /opt/px/src/geo.py /usr/sbin/geoip
 echo "Made command geoip"
 
-ln -s /opt/px/px /usr/sbin/px
+ln -s /opt/px/src/px /usr/sbin/px
 echo "Made command px"
 
 chown -R px:px /opt/px
