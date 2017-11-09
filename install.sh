@@ -13,11 +13,10 @@ chmod +x "$BASEDIR/src/skeleton.py"
 chmod +x "$BASEDIR/src/geo.py"
 chmod +x "$BASEDIR/px"
 
-
-
 echo "Attempting to install as a service/daemon on the system. Only works on linux."
 echo "Adding user px..."
 useradd -M px
+sudo deluser px sudo # No sudo for you
 
 mkdir /opt/px
 
@@ -57,7 +56,4 @@ if [ "$(sh /etc/init.d/px-daemon status)"=="Running" ]; then
 else
   echo "Failed to install service"
 fi
-
-
-
 
