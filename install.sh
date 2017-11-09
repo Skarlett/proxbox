@@ -16,19 +16,13 @@ chmod +x "$BASEDIR/px"
 echo "Attempting to install as a service/daemon on the system. Only works on linux."
 echo "Adding user px..."
 useradd -M px
-deluser px sudo # No sudo for you
+sudo deluser px sudo # No sudo for you
 
 mkdir /opt/px
 
 echo "Copying files to install directory"
 
-if [ -d "$BASEDIR/etc" ];
- then
-   cp -R "$BASEDIR/etc" /opt/px
- else
-   mkdir "$BASEDIR/etc"
-fi
-cp -R "$BASEDIR/src" /opt/px
+cp -R "$BASEDIR/*" /opt/px/
 
 echo "Creating soft links in /usr/sbin"
 

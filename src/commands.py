@@ -1,6 +1,6 @@
 from proxy import Proxy
 from requests import get
-from skeleton import IPPortPatternGlobal
+from skeleton import IPPortPatternGlobal, IPPortPatternLine
 from geo import Locator
 from os import path
 from utils import percentage, h_time
@@ -97,13 +97,13 @@ class commands():
         if req.startswith('http'):
           data = get(req).content
           for ip, port in IPPortPatternGlobal.findall(data):
-            self.__parent._db.add(ip, port, commit=False)
+            self.__parent._db.add(ip, port, commit=False, provider="User_Input")
           self.__parent._db.commit()
         else:
           if path.isfile(req):
             with open(req) as f:
               for l in f:
-                for ip, port in IPPortPatternGlobal.findall(l):
+                for ip, port in IPPortPatternLine.findall(l):
                   self.__parent._db.add(ip, port, commit=False)
             self.__parent._db.commit()
       return 'Added.'
