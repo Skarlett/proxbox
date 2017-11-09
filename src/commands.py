@@ -8,7 +8,6 @@ import time
 import Settings
 
 
-
 class commands():
   def __init__(self, parent):
     # ProxyFrame
@@ -128,6 +127,5 @@ class commands():
       msg += x+':'+str(self.parent.factory.remove(x, save=False))
       self.parent._db.execute('DELETE FROM RENEWAL WHERE UUID = ?', (x,))
     self.parent.factory.save()
-    
     return msg
    

@@ -75,7 +75,7 @@ mine_wait_time = 60 * 60  # 1 hour
 # Connection info
 global_timeout = 30
 socket_backlog = 1
-local_conn = ('127.0.0.1', 52313)
+local_conn = ('127.0.0.1', 52312)
 
 ##
 # Advanced features - ps don't touch if you don't know what is

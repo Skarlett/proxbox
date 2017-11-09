@@ -19,7 +19,7 @@ import providers
 
 RUNNING = True
 
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 
 # logging = logging.Logger('main.log', 10)
 
@@ -230,29 +230,27 @@ class ProxyFrameDB(Sqlite3Worker):
     except: return False
   
 class ProxyFrame:
-  def __init__(self, proxyDbLoc, allow_update=True):
+  def __init__(self, proxyDbLoc):
     self._db = ProxyFrameDB(proxyDbLoc)
     
     # Extra stuff
     self.mine_cnt = 0
-    self.responses = {}
     self._start_time = time.time()
-    self._queryContainer = Queue.Queue()
     self.factory = providers.Factory(Settings.providers)
     self.last_scraped = self.find_last_scraped()
+    
     self._tasks = [
-      #self.process_communication,
       self.scrape,
-      self.backup]
+      self.backup
+    ]
     
     self.commands = commands.commands(self)
     self.communicate = Communicate_CLI(self)
     # start up and check database for first run.
     
     if self._db.first_run or self._db.getTotal() <= 0:
-      if allow_update:
-        logging.error('Not enough proxies in DB, running proxy scrape first.')
-        self.scrape(True)
+      logging.error('Not enough proxies in DB, running proxy scrape first.')
+      self.scrape(True)
   
     #################
     #     Utils
@@ -358,16 +356,9 @@ class ProxyFrame:
           ctr += len(result.proxies)
           for ip, port in result.proxies:
             self._db.add(ip, port, provider=result.uuid)
-          # last_scrape = time.time()
         else:
           logging.warn('Failed provider [{}] Dumping object into logs.\n{}\n'.format(result.uuid.upper(), vars(result)))
           
-          #print vars(result)
-          # last_scrape = 0
-          # last_scrape = 0
-          # for x in self.factory.providers:
-          #   if x.uuid == result.uuid:
-          #     x.use = False
 
         self._db.execute('UPDATE RENEWAL SET EPOCH = ? WHERE UUID = ?', (time.time(), result.uuid))
         self.last_scraped = (result.uuid, time.time())

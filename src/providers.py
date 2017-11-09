@@ -5,8 +5,12 @@ import requests
 import re
 import logging
 
+url_pattern = re.compile(r'href=[\'"]?([^\'" >]+)')
+
+
 class Error(Exception):
   pass
+
 
 class ProviderExists(Exception):
   pass
@@ -15,8 +19,6 @@ class ProviderExists(Exception):
 class BadFormatProvider(Exception):
   pass
 
-
-url_pattern = re.compile(r'href=[\'"]?([^\'" >]+)')
 
 class Provider(Skeleton):
   def __init__(self, uuid=None, renewal=0, use=True, **kwargs):
