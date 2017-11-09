@@ -6,16 +6,20 @@ if [ "$EUID" -ne 0 ]
   then echo "Please run as root"
   exit
 fi
-
 echo "Starting..."
-mkdir /opt/px
-# chown root:root /opt/px
-chown root:root "$BASEDIR/px-daemon"
 
 chmod +x "$BASEDIR/src/pxf.py"
 chmod +x "$BASEDIR/src/skeleton.py"
 chmod +x "$BASEDIR/src/geo.py"
 chmod +x "$BASEDIR/px"
+
+
+
+echo "Attempting to install as a service/daemon on the system. Only works on linux."
+echo "Adding user px..."
+useradd -M px
+
+mkdir /opt/px
 
 echo "Copying files to install directory"
 
@@ -38,19 +42,22 @@ echo "Made command geoip"
 ln -s /opt/px/px /usr/sbin/px
 echo "Made command px"
 
+chown -R px:px /opt/px
+chmod +x /opt/px
 
-
-echo "Attempting to install as a service/daemon on the system. Only works on linux."
-echo "Adding user px..."
-useradd -M px
-
+cp "$BASEDIR/px-daemon" "/etc/init.d/px-daemon"
+chown root:root /etc/init.d/px-daemon
 echo "copying files to init.d..."
 cp "$BASEDIR/px-daemon" /etc/init.d/px-daemon
 sh /etc/init.d/px-daemon start
 
-eho "checking if it ran..."
-if ["$(sh /etc/init.d/px-daemon status)" == "Running"]; then
+echo "checking if it ran..."
+if [ "$(sh /etc/init.d/px-daemon status)"=="Running" ]; then
   echo "Service installed correctly!"
 else
   echo "Failed to install service"
 fi
+
+
+
+
