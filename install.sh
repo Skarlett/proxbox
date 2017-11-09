@@ -43,11 +43,21 @@ chmod +x /opt/px
 
 cp "$BASEDIR/px-daemon" "/etc/init.d/px-daemon"
 chown root:root /etc/init.d/px-daemon
-echo "copying files to init.d..."
-cp "$BASEDIR/px-daemon" /etc/init.d/px-daemon
-sh /etc/init.d/px-daemon start
 
-echo "checking if it ran..."
+
+
+echo "copying files to init.d..."
+if [ -f "/etc/init.d/px-daemon" ]
+then
+	#echo "$file found."
+	if [ "$(sh /etc/init.d/px-daemon status)"!="Running" ]; then
+	  sh /etc/init.d/px-daemon start
+	fi
+else
+	cp "$BASEDIR/px-daemon" /etc/init.d/px-daemon
+	sh /etc/init.d/px-daemon start
+fi
+
 if [ "$(sh /etc/init.d/px-daemon status)"=="Running" ]; then
   echo "Service installed correctly!"
 else
