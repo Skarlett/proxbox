@@ -1,6 +1,6 @@
 # px
 This tool is used for collecting, storing and checking proxy servers.
-Current Version: 1.0.3
+Current Version: 1.0.4
 ### Change list
   + Added sqlite3worker
   
