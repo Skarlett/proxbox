@@ -18,14 +18,14 @@ chmod +x "$BASEDIR/src/px"
 
 echo "Attempting to install as a service/daemon on the system. Only works on linux."
 echo "Adding user px..."
-useradd -M px
-deluser px sudo # No sudo for you
+useradd -M -s /bin/false px
 
 mkdir /opt/px
 
 echo "Copying files to install directory"
 
-cp -R "$BASEDIR/*" /opt/px/
+cp -R "$BASEDIR/src/" /opt/px/
+cp -R "$BASEDIR/etc/" /opt/px/
 
 echo "Creating soft links in /usr/sbin"
 
@@ -43,11 +43,21 @@ chmod +x /opt/px
 
 cp "$BASEDIR/px-daemon" "/etc/init.d/px-daemon"
 chown root:root /etc/init.d/px-daemon
-echo "copying files to init.d..."
-cp "$BASEDIR/px-daemon" /etc/init.d/px-daemon
-sh /etc/init.d/px-daemon start
 
-echo "checking if it ran..."
+
+
+echo "copying files to init.d..."
+if [ -f "/etc/init.d/px-daemon" ]
+then
+	#echo "$file found."
+	if [ "$(sh /etc/init.d/px-daemon status)"!="Running" ]; then
+	  sh /etc/init.d/px-daemon start
+	fi
+else
+	cp "$BASEDIR/px-daemon" /etc/init.d/px-daemon
+	sh /etc/init.d/px-daemon start
+fi
+
 if [ "$(sh /etc/init.d/px-daemon status)"=="Running" ]; then
   echo "Service installed correctly!"
 else
