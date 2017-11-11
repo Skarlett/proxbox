@@ -67,18 +67,30 @@ Current Version: 1.0.5
 #### Configuration
 You will find in `src/Settings.py` configuration for the program, these options are yet to be documented due to the fact they are ever changing. Until further notice, there will be no efforts to document them other than their describing names.
 
-#### Global Installation (Linux)
+### Global Installation (Linux)
 This will install the script under /etc/init.d/px-daemon, run it through a user named PX and install utility commands like `px`, `geoip`, and `pxyscrape` into `/usr/sbin`
 
     sudo ./install.sh
     px -i
 
-#### Local run
+###### Local run
     cd /path/to/dir
     python src/pxf.py &
     ./px -i
 
-#### Command line tools
+To start the `px-daemon` just in case it stopped you can run the following.
+This is also the case you should use if `px` ever returns `"ProxyMiner isn't online."`
+
+    sh /etc/init.d/px-daemon start
+
+
+
+### Command line tools
+   
+###### px   
+
+Command line interface for `px-daemon`, this interacts with storing, collecting, and scanning proxies.
+
     [-h --help]
     [-g --get,
       ( -b | --bot Formats for easy scraping)
@@ -98,14 +110,28 @@ This will install the script under /etc/init.d/px-daemon, run it through a user 
     [--providers] Shows statistics on each provider
     [--reload-providers] reload providers.json
 
-After starting the `px-daemon` service or running `src/pxf.py` It will attempt to fill the database with proxies from the providers list. 
+After starting the `px-daemon` service or running `src/px-daemon.py` It will attempt to fill the database with proxies from the providers list. 
 Any provider you add during it's runtime will delayed shortly before scraped, while at boot time will be appended immdiately and soon after will be scraped.
 
-To start the `px-daemon` just in case it stopped you can run the following.
+To start the `px-daemon` **in global installation** just in case it stopped you can run the following.
 This is also the case you should use if `px` ever returns `"ProxyMiner isn't online."`
 
     sh /etc/init.d/px-daemon start
 
+###### geoip
+A very simple tool with one function,
+   
+    geoip [IP]
+It returns very fine details about IP address information like ISP, Half-ass location.
+
+###### pxyscrape
+Proxy scraper tool, its designed to take IP and port pairs off just about any bit of data
+
+    pxyscrape [-u --url URL] [-a --author] [-h --help] [-d --data FILE]
+    
+    Example: python pxyscrape -u http://someplace.somehow/proxies http://moarproxies.net/pxy
+
+and it will return them in `ip:port` in stdout.
 
 ### Providers.json
 This file is unique in some ways, it contains all the places as to where to get the proxies from. Including keywords...
