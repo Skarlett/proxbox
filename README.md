@@ -111,7 +111,9 @@ This is also the case you should use if `px` ever returns `"ProxyMiner isn't onl
 This file is unique in some ways, it contains all the places as to where to get the proxies from. Including keywords...
 
 `renewal (int)` which is how often the proxy source should be scraped, **counted in seconds.**
+
 `use (bool)` Which specifies if this proxy srouce should be used
+
 `type (socks5|http|nonspecific)` This contains the protocol, if a source specifically gives a certain protocol, this should be specified. In unpredictable enviorments, `nonspecific` should be used instead of a protocol.
 
 In the url list field under `types`, there is logic the can be applied to quickly generate predictable url strings.
