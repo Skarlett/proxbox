@@ -4,7 +4,6 @@ import shutil
 import errno
 import struct
 import time
-import Queue
 import logging
 import socket
 from sqlite3worker import Sqlite3Worker
@@ -19,7 +18,7 @@ import providers
 
 RUNNING = True
 
-__version__ = '1.0.4'
+__version__ = Settings.version
 
 # logging = logging.Logger('main.log', 10)
 
@@ -329,9 +328,9 @@ class ProxyFrame:
     ctr = 0
     
     for result in self.factory.providers:
-      data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))[0]
+      data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))
       
-      if data:
+      if data[0]:
         _, epoch, _ = data
         epoch = float(epoch)
       else:

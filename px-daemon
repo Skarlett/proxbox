@@ -10,7 +10,7 @@
 ### END INIT INFO
 
 dir="/opt/px/"
-cmd="python /opt/px/src/pxf.py"
+cmd="python /opt/px/src/px-daemon.py"
 user="px"
 
 name=`basename $0`
@@ -80,7 +80,13 @@ case "$1" in
         echo "Unable to stop, will not attempt to start"
         exit 1
     fi
+    sleep 15
     $0 start
+    if is_running; then
+        echo "restarted"
+    else
+        echo "Failed to start"
+    fi
     ;;
     status)
     if is_running; then

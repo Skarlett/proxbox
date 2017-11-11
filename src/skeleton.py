@@ -79,22 +79,23 @@ class Provider:
             self.urls.add(x)
     
     
-    wrapper_scrape = lambda driver: self._scrape(driver)
+    
     
     
     if self.jsgen and Settings.enable_js_gen:
-      self.scrape = wrapper_scrape(PhantomJS)
+      self.driver = PhantomJS()
     else:
-      self.scrape = wrapper_scrape(requests)
+      self.driver = requests
     
-  def _scrape(self, driver, ignore_exceptions=False):
+  def scrape(self, ignore_exceptions=False):
     proxies = set()
     for url in list(self.urls):
       while self.retry_limit >= self._retries:
         try:
-          r = driver.get(url)
+          r = self.driver.get(url)
+         
           if not hasattr(r, 'content'):
-            r = Struct(ok=len(driver.page_source) > 0, content=driver.page_source, url=url)
+            r = Struct(ok=len(self.driver.page_source) > 0, content=self.driver.page_source, url=url)
           
           self._retries = 0
           if r.ok:
@@ -125,16 +126,21 @@ if __name__ == '__main__':
   from sys import argv
   from os.path import split
   
-  helpmsg = '%s [-u --url URL] [-a --author] [-h --help] [-d --data FILE]' \
+  helpmsg = '%s [-u --url (-js) URL] [-a --author] [-h --help] [-d --data FILE]' \
             '\n\n' \
             'Example: python %s -u http://someplace.somehow/proxies http://moarproxies.net/pxy' % (split(__file__)[1], split(__file__)[1])
   
   try:
     if argv[1] in ['-u', '--url']:
-      urls = argv[2:]
+      if not argv[2] == '-js':
+        js_gen = False
+        urls = argv[2:]
+      else:
+        js_gen = True
+        urls = argv[3:]
+      
       if len(urls) > 0:
-        p = Provider()
-        
+        p = Provider(jsgen=js_gen)
         for x in urls:
           if not x.startswith('http'):
             x = 'http://'+x

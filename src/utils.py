@@ -6,7 +6,9 @@ def percentage(part, whole):
     return 0
 
 def h_time(seconds):
-  m, s = divmod(float(seconds), 60)
-  h, m = divmod(m, 60)
-  return "%d:%02d:%02d" % (h, m, s)
-
+  if 8640000 >= seconds:
+    m, s = divmod(float(seconds), 60)
+    h, m = divmod(m, 60)
+    return "%d:%02d:%02d" % (h, m, s)
+  else:
+    return "+100 days"

@@ -48,19 +48,74 @@
             "renewal": 86400,
             "types": {
               "socks5": [
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=0#table",
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=1#table",
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=2#table",
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=3#table",
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=4#table",
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=5#table",
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=6#table",
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=7#table",
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=8#table",
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum=9#table"
-              ]},
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum={0-9}#table"
+              ],
+              "http": [
+                "http://www.xroxy.com/proxylist.php?port=&type=All_http&ssl=&country=&latency=&reliability=&sort=reliability&desc=true&pnum={0-149}#table"
+             ]
+
+            },
             "jsgen":false,
             "use": true
+        },
+      "spys.one": {
+        "renewal": 86400,
+        "types": {
+          "socks5": [
+            "http://spys.one/en/socks-proxy-list/",
+            "http://spys.one/en/socks-proxy-list/1/",
+            "http://spys.one/en/socks-proxy-list/2/"
+          ],
+          "http": [
+            "http://spys.one/en/https-ssl-proxy/",
+            "http://spys.one/en/https-ssl-proxy/1/",
+            "http://spys.one/en/https-ssl-proxy/2/",
+            "http://spys.one/en/http-proxy-list/",
+            "http://spys.one/en/http-proxy-list/1/",
+            "http://spys.one/en/http-proxy-list/2/"
+          ]
+        },
+        "jsgen": false,
+        "use": true
+      },
+      "idcloak.com": {
+        "renewal":86400,
+        "types": {
+          "http":[
+            "http://www.idcloak.com/proxylist/proxy-list.html"
+          ]
+        },
+        "jsgen":false,
+        "use":true
+      },
+      "sslproxies.org": {
+        "renewal":86400,
+        "types": {
+          "http": [
+            "https://www.sslproxies.org/"
+          ]
+        },
+        "jsgen":false,
+        "use":true
+      },
+      "proxygaz.com": {
+        "renewal":86400,
+        "types": {
+          "http": [
+            "http://proxygaz.com/"
+          ]
+        },
+        "jsgen":false,
+        "use":true
+      },
+      "myipservices.com":{
+        "renewal": 86400,
+        "types": {
+          "http": [
+            "myipservices.com/proxy-list",
+            "myipservices.com/proxy-list/1"
+          ]
         }
+      }
     }
 }
