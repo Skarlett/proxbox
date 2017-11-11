@@ -11,7 +11,7 @@ echo "Starting..."
 python -m pip install setuptools
 python -m pip install sqlite3worker
 
-chmod +x "$BASEDIR/src/pxf.py"
+chmod +x "$BASEDIR/src/px-daemon.py"
 chmod +x "$BASEDIR/src/skeleton.py"
 chmod +x "$BASEDIR/src/geo.py"
 chmod +x "$BASEDIR/src/px"

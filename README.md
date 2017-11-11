@@ -1,6 +1,6 @@
 # px
 This tool is used for collecting, storing and checking proxy servers.
-Current Version: 1.0.4
+Current Version: 1.0.5
 ### Change list
   + Added sqlite3worker
 
@@ -61,7 +61,8 @@ Current Version: 1.0.4
   + Its probably common knowledge, but we never explicitly hardcoded each commands, so it's probably more than possible for a raw injection of python into the implementation of the socket structure that communicates `px` and `pxf.py/px-daemon`
 
 ### Implementation of install
-  So I figured that the safest way to do this was to make a user called `px` and then make no files actually owned by it, but go ahead and run the daemon as that user so if there were to an injection in `px-daemon` then, it would atleast miminalize the fact they no longer have root privelleges. Further more since it would be a socket injection it is highly recommended to run this on local host, with the port its listening on closed.
+  So I figured that the safest way to do this was to make a user called `px` and then make `/opt/px` owned by it, but go ahead and run the daemon as that user so if there were to an injection in `px-daemon` then, it would atleast miminalize the fact they no longer have root privelleges. Further more since it would be a socket injection it is highly recommended to run this on local host, with the port its listening on closed. ( Later on I need to make px-daemon.py owned by root and give perms to only read and exec)
+
 
 #### Configuration
 You will find in `src/Settings.py` configuration for the program, these options are yet to be documented due to the fact they are ever changing. Until further notice, there will be no efforts to document them other than their describing names.
@@ -95,6 +96,7 @@ This will install the script under /etc/init.d/px-daemon, run it through a user 
     [-ap --add-provider (scrape time) (URL)] adds URLs to providers list
     [-dp --del-provider (UUID)] removes URL to providers list
     [--providers] Shows statistics on each provider
+    [--reload-providers] reload providers.json
 
 After starting the `px-daemon` service or running `src/pxf.py` It will attempt to fill the database with proxies from the providers list. 
 Any provider you add during it's runtime will delayed shortly before scraped, while at boot time will be appended immdiately and soon after will be scraped.

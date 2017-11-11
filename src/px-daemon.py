@@ -246,6 +246,8 @@ class ProxyFrame:
     self.commands = commands.commands(self)
     self.communicate = Communicate_CLI(self)
     # start up and check database for first run.
+    self.current_task = "init"
+    
     
     if self._db.first_run or self._db.getTotal() <= 0:
       logging.error('Not enough proxies in DB, running proxy scrape first.')
@@ -326,11 +328,12 @@ class ProxyFrame:
     '''
     logging.info('Preparing self_update...')
     ctr = 0
-    
+    print('preparing self update')
+    self.current_task = "scraping"
     for result in self.factory.providers:
-      data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))
+      data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))[0]
       
-      if data[0]:
+      if data and len(data) > 2:
         _, epoch, _ = data
         epoch = float(epoch)
       else:
@@ -348,8 +351,8 @@ class ProxyFrame:
               result.use = False
             else: # It should, but in case of glitches and subclasses, we'll assert it will have it if it fails.
               setattr(result, 'use', False)
-          else:
-            result.scrape()
+        else:
+          result.scrape()
         
         if len(result.proxies) > 0 and result.use:
           ctr += len(result.proxies)
@@ -423,6 +426,7 @@ class ProxyFrame:
     :return:
     '''
     #print "mining."
+    self.current_task = "mining"
     query = 'SELECT * FROM PROXY_LIST'
   
     if not include_online:
@@ -439,6 +443,8 @@ class ProxyFrame:
       if not proxy.dead:
           if force or time.time() - proxy.last_mined >= Settings.mine_wait_time:
             proxy.mine(timeout)
+          else:
+            self.current_task = "chilling"
       else:
           self._db.remove(proxy.uuid)
       # except ValueError:

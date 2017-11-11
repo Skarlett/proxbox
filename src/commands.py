@@ -44,12 +44,12 @@ class commands():
   ###
   def info(self):
     try:
-      return 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: [%s] [%s]' %\
+      return 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: [%s] [%s]\nStatus: [%s]' %\
            (self.total_cnt(), self.online_cnt(), self.parent.mine_cnt, self.uptime(), str(self.parent.last_scraped[0]),
-            h_time(time.time()-float(self.parent.last_scraped[1])))
+            h_time(time.time()-float(self.parent.last_scraped[1])), self.parent.current_task)
     except:
-      return 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: None' %\
-           (self.total_cnt(), self.online_cnt(), self.parent.mine_cnt, self.uptime())
+      return 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: None\nStatus: [%s]' %\
+           (self.total_cnt(), self.online_cnt(), self.parent.mine_cnt, self.uptime(), self.parent.current_task)
   
   def pinfo(self, req):
     # get info about a specific proxy by uuid

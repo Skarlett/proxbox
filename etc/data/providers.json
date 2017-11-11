@@ -112,10 +112,12 @@
         "renewal": 86400,
         "types": {
           "http": [
-            "myipservices.com/proxy-list",
-            "myipservices.com/proxy-list/1"
+            "http://myipservices.com/proxy-list",
+            "http://myipservices.com/proxy-list/1"
           ]
-        }
+        },
+        "jsgen":false,
+        "use":true
       }
     }
 }
