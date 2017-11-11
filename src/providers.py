@@ -76,9 +76,9 @@ class Factory():
             
                   # Read url schemas
                   if '{' in url and '}' in url:
-                    start_url = url.split('{')[1]
-                    range_ = start_url.split('}')[0]
-                    end_url = start_url.split('}')[1]
+                    start_url = url.split('{')[0]
+                    range_ = url.split('{')[1].split('}')[0]
+                    end_url = url.split('}')[1]
                     
                     s, f = range_.split('-')
                     for x in xrange(int(s), int(f)):

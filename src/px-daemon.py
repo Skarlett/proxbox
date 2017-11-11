@@ -328,9 +328,9 @@ class ProxyFrame:
     ctr = 0
     
     for result in self.factory.providers:
-      data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))
+      data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))[0]
       
-      if data[0]:
+      if data and len(data) > 2:
         _, epoch, _ = data
         epoch = float(epoch)
       else:
