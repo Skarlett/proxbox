@@ -48,10 +48,10 @@
             "renewal": 86400,
             "types": {
               "socks5": [
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum={0-9}#table",
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum={0-9}#table"
               ],
               "http": [
-                "http://www.xroxy.com/proxylist.php?port=&type=All_http&ssl=&country=&latency=&reliability=&sort=reliability&desc=true&pnum={0-149#table"
+                "http://www.xroxy.com/proxylist.php?port=&type=All_http&ssl=&country=&latency=&reliability=&sort=reliability&desc=true&pnum={0-149}#table"
              ]
 
             },
