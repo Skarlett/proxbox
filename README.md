@@ -8,6 +8,7 @@ Current Version: 1.0.4
     [X] Safe run
     [ ] Add dynamic logging handle for debugging outside of development
     [X] Add support for http proxies
+    [ ] determine if http proxy is protected by ssl/tsl or whatever new variant.
     [ ] Add support for socks4 proxies
     [X] add support for selecting which proxies to collect
     [X] Add command line support for specifying proxy protocol
