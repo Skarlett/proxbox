@@ -65,7 +65,10 @@ backup_at = 60*60*24*7 # 7 days
 
 remove_by_reliance = .02
 remove_when_total = 25 # Greater than
-collect_protocol = ['socks5', 'http']
+collect_protocol = [
+  'socks5',
+  #'http'
+]
 
 ##
 # Proxy mining
