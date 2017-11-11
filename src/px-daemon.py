@@ -142,7 +142,7 @@ class ProxyFrameDB(Sqlite3Worker):
   def __init__(self, fp):
     self.fp = fp
     Sqlite3Worker.__init__(self, fp)
-    r = self.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='PROXY_LIST';")[0]
+    r = self.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='PROXY_LIST';")
     if not r:
       self.execute('''CREATE TABLE PROXY_LIST(
         UUID INTEGER PRIMARY KEY,
