@@ -78,15 +78,8 @@ This will install the script under /etc/init.d/px-daemon, run it through a user 
     python src/pxf.py &
     ./px -i
 
-To start the `px-daemon` just in case it stopped you can run the following.
-This is also the case you should use if `px` ever returns `"ProxyMiner isn't online."`
-
-    sh /etc/init.d/px-daemon start
-
-
 
 ### Command line tools
-   
 ###### px   
 
 Command line interface for `px-daemon`, this interacts with storing, collecting, and scanning proxies.
