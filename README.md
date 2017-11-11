@@ -123,6 +123,22 @@ This specific operator will yield multiple urls from a single one, by iterating 
     http://myproxies.com/page/{0-20}/
 
 
+A single entry example of this would be...
+
+        "xroxy.com": {
+            "renewal": 86400,
+            "types": {
+              "socks5": [
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum={0-9}#table"
+              ],
+              "http": [
+                "http://www.xroxy.com/proxylist.php?port=&type=All_http&ssl=&country=&latency=&reliability=&sort=reliability&desc=true&pnum={0-149}#table"
+             ]
+            },
+            "jsgen":false,
+            "use": true
+        }
+
 ##### Errors and output
   + Errors: `/var/log/px-daemon.err`
   + stdout: `/var/log/px-daemon.log`
