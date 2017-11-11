@@ -199,6 +199,10 @@ if __name__ == '__main__':
       send_msg(s, 'providers')
       print(recv_msg(s))
       
+    elif argv[1] in ['-rp', '--reload-providers']:
+      send_msg(s, 'reload_providers')
+      print(recv_msg(s))
+      
   else:
     print(help_msg)
     exit(0)

@@ -30,7 +30,7 @@ for d in [etc_folder, bin_folder, data_folder, backup_folder]:
 # Constants
 ####
 public_ip = requests.get('http://ipv4bot.whatismyipaddress.com/').content.strip()
-version = "1.0.3"
+version = "1.0.5"
 _version = 0
 
 ##

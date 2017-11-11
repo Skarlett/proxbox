@@ -24,17 +24,32 @@ class commands():
     else:
       self.execute = lambda _: None
       
-      
+  ##
+  # Utils
+  ###
   def online_cnt(self):
     return self.parent.online()
   
   def total_cnt(self):
     return self.parent.totalProxies()
+
+  def uptime(self):
+    return h_time(self.parent.uptime())
+
+  def geo(self, ip):
+    return '\n'.join(unicode(k) + ': ' + unicode(v) for k, v in Locator(ip)._data.items())
   
+  ##
+  # Human stuff
+  ###
   def info(self):
-    return 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: [%s] [%s]' %\
+    try:
+      return 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: [%s] [%s]' %\
            (self.total_cnt(), self.online_cnt(), self.parent.mine_cnt, self.uptime(), str(self.parent.last_scraped[0]),
             h_time(time.time()-float(self.parent.last_scraped[1])))
+    except:
+      return 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: None' %\
+           (self.total_cnt(), self.online_cnt(), self.parent.mine_cnt, self.uptime())
   
   def pinfo(self, req):
     # get info about a specific proxy by uuid
@@ -73,23 +88,6 @@ class commands():
   def scrape(self):
     return self.parent.scrape()
   
-  def uptime(self):
-    return h_time(self.parent.uptime())
-  
-  def providers(self):
-    msg = ''
-    for i, provider in enumerate(self.parent.factory.providers):
-      last_scrape, alive, dead = self.parent._db.provider_stats(provider)
-      total = self.parent._db.execute('SELECT Count(*) from PROXY_LIST where PROVIDER = ?', (provider.uuid, ))[0][0]
-      msg += provider.uuid+'\n\tReliance: %f\n\tAlive: %d\n\tDead: %d\n\tContributed: %d\n\tLast scraped: %s' %\
-                           (percentage(alive, alive+dead), alive, dead, total, h_time(time.time()-float(last_scrape)))
-      if len(self.parent.factory.providers)-1 >= i:
-        msg += '\n'
-    return msg
-  
-  def geo(self, ip):
-    return '\n'.join(unicode(k)+': '+unicode(v) for k, v in Locator(ip)._data.items())
-  
   def add(self, *args):
     if args:
       for req in args:
@@ -107,7 +105,22 @@ class commands():
             
       return 'Added.'
     else: return 'Needs more args.'
-    
+  
+  ##
+  # Provider tools
+  ###
+  
+  def providers(self):
+    msg = ''
+    for i, provider in enumerate(self.parent.factory.providers):
+      last_scrape, alive, dead = self.parent._db.provider_stats(provider)
+      total = self.parent._db.execute('SELECT Count(*) from PROXY_LIST where PROVIDER = ?', (provider.uuid, ))[0][0]
+      msg += provider.uuid+'\n\tReliance: %f\n\tAlive: %d\n\tDead: %d\n\tContributed: %d\n\tLast scraped: %s' %\
+                           (percentage(alive, alive+dead), alive, dead, total, h_time(time.time()-float(last_scrape)))
+      if len(self.parent.factory.providers)-1 >= i:
+        msg += '\n'
+    return msg
+
   def add_provider(self, renewal, jsgen=False, *urls):
     if urls:
       try:
@@ -128,4 +141,8 @@ class commands():
       self.parent._db.execute('DELETE FROM RENEWAL WHERE UUID = ?', (x,))
     self.parent.factory.save()
     return msg
-   
+  
+  def reload_providers(self):
+    self.parent.factory.load()
+    self.parent.factory.generate()
+    return "done."
