@@ -163,9 +163,10 @@ class ProxyFrameDB(Sqlite3Worker):
       )''')
       self.execute('''
       CREATE TABLE RENEWAL(
-        UUID TEXT,
+        UUID TEXT UNIQUE ON CONFLICT REPLACE,
         EPOCH TEXT,
         DEAD_CNT
+        UNIQUE ON CONFLICT IGNORE
       );
       ''')
       
@@ -331,10 +332,10 @@ class ProxyFrame:
     print('preparing self update')
     self.current_task = "scraping"
     for result in self.factory.providers:
-      data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))[0]
-      
-      if data and len(data) > 2:
-        _, epoch, _ = data
+      data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))
+      print data
+      if data and len(data[0]) > 2:
+        _, epoch, _ = data[0]
         epoch = float(epoch)
       else:
         logging.info('Adding %s to db' % result.uuid)
@@ -342,6 +343,7 @@ class ProxyFrame:
         epoch = 0
       
       if force or time.time() >= epoch+result.renewal:
+        print "scraping " + str(result.uuid)
         if Settings.safe_run:
           try:
             result.scrape()
