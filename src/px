@@ -23,6 +23,7 @@ help_msg = '[-h --help]\n' \
            '[-ap --add-provider (scrape time) (URL)] adds URLs to providers list\n' \
            '[-dp --del-provider (UUID)] removes URL to providers list\n' \
            '[--providers] Shows statistics on each provider\n' \
+           '[-rp --reload-providers] Shows statistics on each provider\n' \
            
 
 _seperator = ':::'

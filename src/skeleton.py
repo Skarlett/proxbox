@@ -83,7 +83,7 @@ class Provider:
     
     
     if self.jsgen and Settings.enable_js_gen:
-      self.driver = PhantomJS
+      self.driver = PhantomJS()
     else:
       self.driver = requests
     
