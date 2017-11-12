@@ -3,10 +3,10 @@ This tool is used for collecting, storing and checking proxy servers.
 Current Version: 1.0.5
 ### Change list
   + Added sqlite3worker
+  + Added multithreaded proxy scanning
 
 ### Todo
     [X] Safe run
-    [ ] Add dynamic logging handle for debugging outside of development
     [X] Add support for http proxies
     [ ] determine if http proxy is protected by ssl/tsl or whatever new variant.
     [ ] Add support for socks4 proxies
@@ -27,7 +27,6 @@ Current Version: 1.0.5
     [X] converge factory and proxyframe so both providers file and database are purged
     [X] switch over to sqlite3worker eventually, maybe a modified version.
     [ ] massscan le internet, once i figure out how to collect banners.
-    [ ] optimize scanning ips in providers
 
 
 
@@ -138,27 +137,32 @@ This file is unique in some ways, it contains all the places as to where to get 
 In the url list field under `types`, there is logic the can be applied to quickly generate predictable url strings.
 The current implied syntax is currently as following.
 
+###### Example Entry:
+    
+    {
+      "providers": {
+        /* Root Url for string ID */
+        "provider.com": {
+          "renewal": 86400, /* (24h) How often to scrape in seconds*/
+          "types": {
+            "http: ["http://httpproxies.com/page/1"],
+            "socks5": ["http://socks5proxies.com/page/1"],
+            "nonspecific":["http://anyprotocol-proxies.com/page/1"]
+          },
+          "jsgen":false,
+          "use":true
+        }
+       /* end of entry */
+      }
+    }
+
+
 ###### Range Operator
 This specific operator will yield multiple urls from a single one, by iterating the place `{` and `}` and replacing it with a number between its iterations.
 
     http://myproxies.com/page/{0-20}/
 
 
-A single entry example of this would be...
-
-        "xroxy.com": {
-            "renewal": 86400,
-            "types": {
-              "socks5": [
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum={0-9}#table"
-              ],
-              "http": [
-                "http://www.xroxy.com/proxylist.php?port=&type=All_http&ssl=&country=&latency=&reliability=&sort=reliability&desc=true&pnum={0-149}#table"
-             ]
-            },
-            "jsgen":false,
-            "use": true
-        }
 
 ##### Errors and output
   + Errors: `/var/log/px-daemon.err`
