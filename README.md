@@ -75,7 +75,7 @@ This will install the script under /etc/init.d/px-daemon, run it through a user 
 
 ###### Local run
     cd /path/to/dir
-    python src/pxf.py &
+    python src/px-daemon.py &
     ./px -i
 
 
