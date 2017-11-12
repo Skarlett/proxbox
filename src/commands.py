@@ -22,7 +22,7 @@ class commands():
     if Settings.raw_sql_exec:
       self.execute = lambda req: self.parent._db.execute(req)
     else:
-      self.execute = lambda _: None
+      self.execute = lambda _: []
       
   ##
   # Utils
@@ -51,10 +51,14 @@ class commands():
       msg = 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: None\nStatus: [%s]' %\
            (self.total_cnt(), self.online_cnt(), self.parent.mine_cnt, self.uptime(), self.parent.current_task)
     
+    msg += '\n'
     for x in Settings.collect_protocol:
-      msg+='\n'+x+': '+str(self.parent._db.execute('SELECT COUNT(*) FROM PROXY_LIST WHERE PROTOCOL = ?', (x,))[0][0])
+      msg += '\n'+x+': '+str(self.parent._db.execute('SELECT COUNT(*) FROM PROXY_LIST WHERE PROTOCOL = ?', (x,))[0][0])
+
+    msg += '\nThreads: '+str(len(self.parent._miners)+3)
     
     return msg
+  
   def pinfo(self, req):
     # get info about a specific proxy by uuid
     proxy = Proxy(self.parent, *self.parent._db.execute('SELECT * FROM PROXY_LIST WHERE UUID = ?', (req,))[0])

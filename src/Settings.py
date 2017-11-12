@@ -29,7 +29,13 @@ for d in [etc_folder, bin_folder, data_folder, backup_folder]:
 ###
 # Constants
 ####
-public_ip = requests.get('http://ipv4bot.whatismyipaddress.com/').content.strip()
+
+try:
+  public_ip = requests.get('http://ipv4bot.whatismyipaddress.com/').content.strip()
+except:
+  logging.error("No internet Connection.")
+  #exit(1)
+
 version = "1.0.5"
 _version = 0
 
@@ -51,8 +57,10 @@ phantomjs_binary = path.join(bin_folder, 'phantomjs')
 
 if not path.isfile(providers):
   logging.info('retrieving providers.json into '+str(providers))
-  urlretrieve('https://raw.githubusercontent.com/Skarlett/px/master/etc/data/providers.json', providers)
-
+  try:
+    urlretrieve('https://raw.githubusercontent.com/Skarlett/px/master/etc/data/providers.json', providers)
+  except:
+    print "Fatal error. Couldn\'t recieve providers.json"
 #################
 # Configuration #
 #################
