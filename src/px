@@ -2,6 +2,7 @@
 from socket import socket
 from sys import argv
 from Settings import local_conn
+from scanner import supported_protocols
 import struct
 
 
@@ -12,6 +13,7 @@ help_msg = '[-h --help]\n' \
            '  (-nc | --no-check Doesnt check proxies for being online before giving them)\n' \
            '  (-a | --all Doesnt check proxies are marked as online before giving them)\n' \
            '  (-t | --time-out [int] inserts timeout value)\n' \
+           '  (-p | --protocol [http:socks5:nonspecific] select specific protocols to gather)\n' \
            ']\n' \
            '[-i --info] shows current state of program \n' \
            '[-p --pinfo (UUID)] shows information on a proxy based on UUID\n' \
@@ -117,6 +119,25 @@ if __name__ == '__main__':
               exit(1)
       else:
         msg += '%s10' % _seperator
+      
+      if in_args(['-p','--protocol']):
+        tag = [x for x in ['-p','--protocol'] if x in argv][0]
+        for i, arg in enumerate(argv):
+          if arg == tag:
+            try:
+              protocol = argv[i+1]
+              if protocol in supported_protocols:
+                msg += _seperator+argv[i+1]
+              else:
+                print("Not a supported protocol")
+                s.close()
+                exit(1)
+            except IndexError:
+              print('Timeout function \'%s\', has no value attached' % tag)
+              exit(1)
+      else:
+        msg += '%snonspecific' % _seperator
+        
       send_msg(s, msg)
       print(recv_msg(s))
       exit(0)

@@ -82,8 +82,10 @@ class Factory():
                     
                     s, f = range_.split('-')
                     for x in xrange(int(s), int(f)):
+                      print start_url+str(x)+end_url
                       urls.add(start_url+str(x)+end_url)
                   else:
+                    print url
                     urls.add(url)
           
           except KeyError:

@@ -4,19 +4,6 @@ from json import loads as jloads
 import Settings
 
 
-#class Error(Exception): pass
-
-
-def discover_protocol(ip, port, timeout=Settings.global_timeout):
-  protocols = {
-    'socks5': isSocks5Protocol,
-    'http': ishttpProxy
-  }
-  for t, f in protocols.items():
-    if t in Settings.collect_protocol and f(ip, port, timeout):
-      return t
-  
-
 def isSocks5Protocol(server, port, timeout=Settings.global_timeout):
   sen = struct.pack('BBB', 0x05, 0x01, 0x00)
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,16 +28,17 @@ def isSocks5Protocol(server, port, timeout=Settings.global_timeout):
   if version == 5:
     return True
 
+
 def ishttpProxy(ip, port, timeout=Settings.global_timeout):
   try:
     pi = jloads(get('http://httpbin.org/get', proxies={
       'http': 'http://%s:%d' % (ip, port),
-      #'https': 'https://%s:%d' % (ip, port),
-    }, timeout=Settings.global_timeout).content)
+      # 'https': 'https://%s:%d' % (ip, port),
+    }, timeout=timeout).content)
   except (exceptions.Timeout,
           exceptions.ProxyError,
           exceptions.ConnectionError,
-          ValueError # Sometimes proxies change the content,
+          ValueError  # Sometimes proxies change the content,
           # and since we're expecting json it will throw an error for anything else
           ) as e:
     return False
@@ -61,3 +49,13 @@ def ishttpProxy(ip, port, timeout=Settings.global_timeout):
     return True
 
 
+#class Error(Exception): pass
+supported_protocols = {
+  'socks5': isSocks5Protocol,
+  'http': ishttpProxy
+}
+
+def discover_protocol(ip, port, timeout=Settings.global_timeout):
+  for t, f in supported_protocols.items():
+    if t in Settings.collect_protocol and f(ip, port, timeout):
+      return t

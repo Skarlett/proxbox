@@ -78,10 +78,6 @@ class Provider:
           for x in v:
             self.urls.add(x)
     
-    
-    
-    
-    
     if self.jsgen and Settings.enable_js_gen:
       self.driver = PhantomJS()
     else:
@@ -93,7 +89,8 @@ class Provider:
       while self.retry_limit >= self._retries:
         try:
           r = self.driver.get(url)
-         
+          print r
+
           if not hasattr(r, 'content'):
             r = Struct(ok=len(self.driver.page_source) > 0, content=self.driver.page_source, url=url)
           

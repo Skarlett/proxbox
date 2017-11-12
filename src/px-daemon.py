@@ -6,9 +6,9 @@ import struct
 import time
 import logging
 import socket
+import threading
 from sqlite3worker import Sqlite3Worker
 from datetime import datetime
-from threading import Thread
 from os import path
 
 from proxy import Proxy
@@ -59,6 +59,20 @@ class InstanceRunning(Error):
   pass
 
 
+class Extra_miner(threading.Thread):
+  def __init__(self, f, *args):
+    threading.Thread.__init__(self)
+    self.daemon = True
+    self.args = args
+    self.f = f
+    self.running = False
+  
+  def run(self):
+    self.running = True
+    while self.running:
+      self.f(*self.args)
+
+
 class User():
   def __init__(self, s, con, timeout=30):
     self.s = s
@@ -92,9 +106,9 @@ class User():
       data += packet
     return data
     
-class Communicate_CLI(Thread):
+class Communicate_CLI(threading.Thread):
   def __init__(self, parent):
-    Thread.__init__(self)
+    threading.Thread.__init__(self)
     self.parent = parent
     self.s = socket.socket()
     try:
@@ -163,9 +177,9 @@ class ProxyFrameDB(Sqlite3Worker):
       )''')
       self.execute('''
       CREATE TABLE RENEWAL(
-        UUID TEXT UNIQUE ON CONFLICT IGNORE,
+        UUID TEXT,
         EPOCH TEXT,
-        DEAD_CNT
+        DEAD_CNT INTEGER
       );
       ''')
       
@@ -192,8 +206,6 @@ class ProxyFrameDB(Sqlite3Worker):
               int(online), alive_cnt, dead_cnt, provider
             )
           )
-        
-          
    
     
   def remove(self, uuid):
@@ -229,7 +241,7 @@ class ProxyFrameDB(Sqlite3Worker):
     except: return False
   
 class ProxyFrame:
-  def __init__(self, proxyDbLoc):
+  def __init__(self, proxyDbLoc, threads=2):
     self._db = ProxyFrameDB(proxyDbLoc)
     
     # Extra stuff
@@ -247,7 +259,9 @@ class ProxyFrame:
     self.communicate = Communicate_CLI(self)
     # start up and check database for first run.
     self.current_task = "init"
-    
+    self._miners = []
+    self.running = True
+    self.thread_cnt = threads
     
     if self._db.first_run or self._db.getTotal() <= 0:
       logging.error('Not enough proxies in DB, running proxy scrape first.')
@@ -301,6 +315,7 @@ class ProxyFrame:
     ''' Nicely shuts everything down for us '''
     global RUNNING
     RUNNING = False
+    self.running = False
     self.communicate.running = False
     self.communicate.s.close()
 
@@ -328,12 +343,12 @@ class ProxyFrame:
     '''
     logging.info('Preparing self_update...')
     ctr = 0
-    print('preparing self update')
+    #print('preparing self update')
     self.current_task = "scraping"
     for result in self.factory.providers:
       data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))
-      
-      if data and len(data[0]) > 2:
+      #print data
+      if data and data[0]:
         _, epoch, _ = data[0]
         epoch = float(epoch)
       else:
@@ -342,7 +357,7 @@ class ProxyFrame:
         epoch = 0
       
       if force or time.time() >= epoch+result.renewal:
-        print "scraping " + str(result.uuid)
+        #print "scraping " + str(result.uuid)
         if Settings.safe_run:
           try:
             result.scrape()
@@ -361,11 +376,12 @@ class ProxyFrame:
             self._db.add(ip, port, provider=result.uuid)
         else:
           logging.warn('Failed provider [{}] Dumping object into logs.\n{}\n'.format(result.uuid.upper(), vars(result)))
-      else:
-        print "passed "+result.uuid
-
-        self._db.execute('UPDATE RENEWAL SET EPOCH = ? WHERE UUID = ?', (time.time(), result.uuid))
+        self._db.execute('UPDATE RENEWAL SET EPOCH = ? WHERE UUID = ?', (str(time.time()), result.uuid))
         self.last_scraped = (result.uuid, time.time())
+      #else:
+      #  print "passed "+result.uuid
+
+      
     logging.info('Added %d to PXFrame.' % ctr)
     return ctr
   
@@ -420,14 +436,12 @@ class ProxyFrame:
       if valid_response >= cnt:
         break
     
-  def miner(self, chunk=100, find_method='ALIVE_CNT', order_method='ASC', force=False, include_online=True, timeout=5,
-            do_tasks=True):
+  def miner(self, chunk=100, find_method='ALIVE_CNT', order_method='ASC', force=False, include_online=True, timeout=5):
     '''
     :param chunk: Query size or None
     :param find_method: ALIVE_CNT or DEAD_CNT
     :return:
     '''
-    self.current_task = "mining"
     query = 'SELECT * FROM PROXY_LIST'
   
     if not include_online:
@@ -443,30 +457,68 @@ class ProxyFrame:
       #try:
       if not proxy.dead:
           if force or time.time() - proxy.last_mined >= Settings.mine_wait_time:
+            self.current_task = "mining"
             proxy.mine(timeout)
           else:
+            #print "passing"
             self.current_task = "chilling"
       else:
           self._db.remove(proxy.uuid)
       # except ValueError:
       #   self._db.remove(proxy.uuid)
+    # if do_tasks:
+    #   self.do_tasks()
     
-    self.do_tasks()
+  def fast_miner(self):
     
+    def wrapper(*args, **kwargs):
+      while self.running:
+        # if Settings.safe_run:
+        #   try:
+        #     self.miner(*args, **kwargs)
+        #   except Exception:
+        #     pass
+        # else:
+          self.miner(*args, **kwargs)
     
-
+    if self.thread_cnt == 0:
+      while self.running:
+        self.miner(0)
+    else:
+      instruct_set = {
+        0: dict(target=wrapper, kwargs=dict(chunk=0, find_method='ALIVE_CNT', order_method='ASC', force=False, include_online=True, timeout=5)),
+        1: dict(target=wrapper, kwargs=dict(chunk=0, find_method='ALIVE_CNT', order_method='DESC', force=False, include_online=True, timeout=5)),
+        2: dict(target=wrapper, kwargs=dict(chunk=0, find_method='DEAD_CNT', order_method='ASC', force=False, include_online=True, timeout=5)),
+        3: dict(target=wrapper, kwargs=dict(chunk=0, find_method='DEAD_CNT', order_method='DESC', force=False, include_online=True, timeout=5)),
+       }
+      assert len(instruct_set) >= self.thread_cnt
+      
+      for i in xrange(0, self.thread_cnt):
+        t=threading.Thread(**instruct_set[i])
+        t.daemon = True
+        self._miners.append(t)
+        t.start()
+      
 if __name__ == '__main__':
   print "loading from "+Settings.data_folder
-  pxf = ProxyFrame(Settings.database)
-  while RUNNING:
-    try:
-      if Settings.safe_run:
-        try:
-          pxf.miner(0)
-        except Exception: pass
-      else:
-        pxf.miner(0)
-    except KeyboardInterrupt:
-      pxf.shutdown()
-      break
+  pxf = ProxyFrame(Settings.database, 4)
+  
+  pxf.fast_miner()
+  try:
+    while pxf.running:
+      pxf.do_tasks()
+  except KeyboardInterrupt:
+    pxf.shutdown()
+    exit(1)
+  # while RUNNING:
+  #   try:
+  #     if Settings.safe_run:
+  #       try:
+  #         pxf.miner(0)
+  #       except Exception: pass
+  #     else:
+  #       pxf.miner(0)
+  #   except KeyboardInterrupt:
+  #     pxf.shutdown()
+  #     break
       
