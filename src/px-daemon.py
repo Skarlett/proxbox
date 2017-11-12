@@ -142,7 +142,7 @@ class ProxyFrameDB(Sqlite3Worker):
   def __init__(self, fp):
     self.fp = fp
     Sqlite3Worker.__init__(self, fp)
-    r = self.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='PROXY_LIST';")[0]
+    r = self.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='PROXY_LIST';")
     if not r:
       self.execute('''CREATE TABLE PROXY_LIST(
         UUID INTEGER PRIMARY KEY,
@@ -163,7 +163,7 @@ class ProxyFrameDB(Sqlite3Worker):
       )''')
       self.execute('''
       CREATE TABLE RENEWAL(
-        UUID TEXT,
+        UUID TEXT UNIQUE ON CONFLICT IGNORE,
         EPOCH TEXT,
         DEAD_CNT
       );
@@ -331,17 +331,18 @@ class ProxyFrame:
     print('preparing self update')
     self.current_task = "scraping"
     for result in self.factory.providers:
-      data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))[0]
+      data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))
       
-      if data and len(data) > 2:
-        _, epoch, _ = data
+      if data and len(data[0]) > 2:
+        _, epoch, _ = data[0]
         epoch = float(epoch)
       else:
-        logging.info('Adding %s to db' % result.uuid)
+        print('Adding [%s] to db' % result.uuid)
         self._db.execute('INSERT INTO RENEWAL(UUID, EPOCH, DEAD_CNT) VALUES(?, ?, ?)', (result.uuid, 0, 0))
         epoch = 0
       
       if force or time.time() >= epoch+result.renewal:
+        print "scraping " + str(result.uuid)
         if Settings.safe_run:
           try:
             result.scrape()
@@ -360,7 +361,8 @@ class ProxyFrame:
             self._db.add(ip, port, provider=result.uuid)
         else:
           logging.warn('Failed provider [{}] Dumping object into logs.\n{}\n'.format(result.uuid.upper(), vars(result)))
-          
+      else:
+        print "passed "+result.uuid
 
         self._db.execute('UPDATE RENEWAL SET EPOCH = ? WHERE UUID = ?', (time.time(), result.uuid))
         self.last_scraped = (result.uuid, time.time())
@@ -425,7 +427,6 @@ class ProxyFrame:
     :param find_method: ALIVE_CNT or DEAD_CNT
     :return:
     '''
-    #print "mining."
     self.current_task = "mining"
     query = 'SELECT * FROM PROXY_LIST'
   
@@ -449,7 +450,8 @@ class ProxyFrame:
           self._db.remove(proxy.uuid)
       # except ValueError:
       #   self._db.remove(proxy.uuid)
-      self.do_tasks()
+    
+    self.do_tasks()
     
     
 

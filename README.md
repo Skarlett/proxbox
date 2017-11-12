@@ -67,18 +67,23 @@ Current Version: 1.0.5
 #### Configuration
 You will find in `src/Settings.py` configuration for the program, these options are yet to be documented due to the fact they are ever changing. Until further notice, there will be no efforts to document them other than their describing names.
 
-#### Global Installation
+### Global Installation (Linux)
 This will install the script under /etc/init.d/px-daemon, run it through a user named PX and install utility commands like `px`, `geoip`, and `pxyscrape` into `/usr/sbin`
 
     sudo ./install.sh
     px -i
 
-#### Local run
+###### Local run
     cd /path/to/dir
-    python src/pxf.py &
+    python src/px-daemon.py &
     ./px -i
 
-#### Command line tools
+
+### Command line tools
+###### px   
+
+Command line interface for `px-daemon`, this interacts with storing, collecting, and scanning proxies.
+
     [-h --help]
     [-g --get,
       ( -b | --bot Formats for easy scraping)
@@ -98,13 +103,62 @@ This will install the script under /etc/init.d/px-daemon, run it through a user 
     [--providers] Shows statistics on each provider
     [--reload-providers] reload providers.json
 
-After starting the `px-daemon` service or running `src/pxf.py` It will attempt to fill the database with proxies from the providers list. 
+After starting the `px-daemon` service or running `src/px-daemon.py` It will attempt to fill the database with proxies from the providers list. 
 Any provider you add during it's runtime will delayed shortly before scraped, while at boot time will be appended immdiately and soon after will be scraped.
 
-To start the `px-daemon` just in case it stopped you can run the following.
+To start the `px-daemon` **in global installation** just in case it stopped you can run the following.
 This is also the case you should use if `px` ever returns `"ProxyMiner isn't online."`
 
     sh /etc/init.d/px-daemon start
+
+###### geoip
+A very simple tool with one function,
+   
+    geoip [IP]
+It returns very fine details about IP address information like ISP, Half-ass location.
+
+###### pxyscrape
+Proxy scraper tool, its designed to take IP and port pairs off just about any bit of data
+
+    pxyscrape [-u --url URL] [-a --author] [-h --help] [-d --data FILE]
+    
+    Example: python pxyscrape -u http://someplace.somehow/proxies http://moarproxies.net/pxy
+
+and it will return them in `ip:port` in stdout.
+
+### Providers.json
+This file is unique in some ways, it contains all the places as to where to get the proxies from. Including keywords...
+
+`renewal (int)` which is how often the proxy source should be scraped, **counted in seconds.**
+
+`use (bool)` Which specifies if this proxy srouce should be used
+
+`type (socks5|http|nonspecific)` This contains the protocol, if a source specifically gives a certain protocol, this should be specified. In unpredictable enviorments, `nonspecific` should be used instead of a protocol.
+
+In the url list field under `types`, there is logic the can be applied to quickly generate predictable url strings.
+The current implied syntax is currently as following.
+
+###### Range Operator
+This specific operator will yield multiple urls from a single one, by iterating the place `{` and `}` and replacing it with a number between its iterations.
+
+    http://myproxies.com/page/{0-20}/
+
+
+A single entry example of this would be...
+
+        "xroxy.com": {
+            "renewal": 86400,
+            "types": {
+              "socks5": [
+                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum={0-9}#table"
+              ],
+              "http": [
+                "http://www.xroxy.com/proxylist.php?port=&type=All_http&ssl=&country=&latency=&reliability=&sort=reliability&desc=true&pnum={0-149}#table"
+             ]
+            },
+            "jsgen":false,
+            "use": true
+        }
 
 ##### Errors and output
   + Errors: `/var/log/px-daemon.err`

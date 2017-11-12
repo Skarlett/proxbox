@@ -80,7 +80,7 @@ class commands():
           msg += '\n'+'-'*25+'\n'
         
       else:
-        msg += '%s:%d' % (proxy.ip, proxy.port)
+        msg += '%s://%s:%d' % (proxy.protocol, proxy.ip, proxy.port)
         if cnt > 1 and i <= cnt-1:
           msg += '\n'
     return msg
