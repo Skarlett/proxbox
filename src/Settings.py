@@ -84,3 +84,7 @@ local_conn = ('127.0.0.1', 52312)
 # Advanced features - ps don't touch if you don't know what is
 ###
 raw_sql_exec = False
+threads = 4
+allow_thread_sleeping = True
+threading_sleep_time = 60 * 5
+thread_sleep_threshold = 10
