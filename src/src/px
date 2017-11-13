@@ -1,0 +1,231 @@
+#!/usr/bin/python
+from socket import socket
+from sys import argv
+from Settings import local_conn
+from scanner import supported_protocols
+import struct
+
+
+
+help_msg = '[-h --help]\n' \
+           '[-g --get,\n' \
+           '  ( -b | --bot Formats for easy scraping)\n' \
+           '  (-nc | --no-check Doesnt check proxies for being online before giving them)\n' \
+           '  (-a | --all Doesnt check proxies are marked as online before giving them)\n' \
+           '  (-t | --time-out [int] inserts timeout value)\n' \
+           '  (-p | --protocol [http:socks5:nonspecific] select specific protocols to gather)\n' \
+           ']\n' \
+           '[-i --info] shows current state of program \n' \
+           '[-p --pinfo (UUID)] shows information on a proxy based on UUID\n' \
+           '[-sc --scrape (-f | --force) Forces a proxy scrape] scrape your provider sources, and add them to the db\n' \
+           '[-t --total] get total number of proxies in data\n' \
+           '[-oc --online-count] returns number of proxies marked alive\n' \
+           '[--uptime] returns the time at which the service was last rebooted\n' \
+           '[-a --add (URL/FilePath)] scrapes and adds to proxies in database\n' \
+           '[-ap --add-provider (scrape time) (URL)] adds URLs to providers list\n' \
+           '[-dp --del-provider (UUID)] removes URL to providers list\n' \
+           '[--providers] Shows statistics on each provider\n' \
+           '[-rp --reload-providers] reload providers.json\n' \
+           
+
+_seperator = ':::'
+
+
+def send_msg(sock, msg):
+  # Prefix each message with a 4-byte length (network byte order)
+  msg = struct.pack('>I', len(msg)) + msg
+  sock.sendall(msg)
+
+
+def recv_msg(sock):
+  # Read message length and unpack it into an integer
+  raw_msglen = recvall(sock, 4)
+  if not raw_msglen:
+    return None
+  msglen = struct.unpack('>I', raw_msglen)[0]
+  # Read the message data
+  return recvall(sock, msglen)
+
+
+def recvall(sock, n):
+  # Helper function to recv n bytes or return None if EOF is hit
+  data = ''
+  while len(data) < n:
+    packet = sock.recv(n - len(data))
+    if not packet:
+      return None
+    data += packet
+  return data
+
+
+def in_args(list):
+  return bool([x for x in list if x in argv])
+
+if __name__ == '__main__':
+  if len(argv) > 1:
+    if argv[1] in ['-h', '--help']:
+      print(help_msg)
+      exit(0)
+    
+    s = socket()
+    s.settimeout(65565**2)
+    try:
+      s.connect(local_conn)
+    except Exception:
+      print('ProxyMiner isn\'t online.')
+      exit(1)
+    
+    
+    if argv[1] in ['-g', '--get']:
+      msg = 'get'
+      
+      # Could have totally done in a more proper way
+      if in_args(['-c', '--count']):
+        tag = [x for x in ['-c', '--count'] if x in argv][0]
+        for i, arg in enumerate(argv):
+          if arg == tag:
+            try:
+              msg += _seperator + argv[i + 1]
+              break
+            except IndexError:
+              print('Count function \'%s\', has no value attached' % tag)
+              exit(1)
+      else:
+        msg+= '%s1' % _seperator
+        
+      if in_args(['-b', '--bot']):
+        msg += '%sTrue' % _seperator
+      else:
+        msg += '%sFalse' % _seperator
+      
+      if in_args(['-nc', '--no-check']):
+        msg += '%sFalse' % _seperator
+      else:
+        msg += '%sTrue' % _seperator
+      
+      if in_args(['-a', '--all']):
+        msg += '%sFalse' % _seperator
+      else:
+        msg += '%sTrue' % _seperator
+      
+      if in_args(['-t','--time-out']):
+        tag = [x for x in ['-t', '--time-out'] if x in argv][0]
+        for i, arg in enumerate(argv):
+          if arg == tag:
+            try:
+              msg += _seperator+argv[i+1]
+            except IndexError:
+              print('Timeout function \'%s\', has no value attached' % tag)
+              exit(1)
+      else:
+        msg += '%s10' % _seperator
+      
+      if in_args(['-p','--protocol']):
+        tag = [x for x in ['-p','--protocol'] if x in argv][0]
+        for i, arg in enumerate(argv):
+          if arg == tag:
+            try:
+              protocol = argv[i+1]
+              if protocol in supported_protocols:
+                msg += _seperator+argv[i+1]
+              else:
+                print("Not a supported protocol")
+                s.close()
+                exit(1)
+            except IndexError:
+              print('Timeout function \'%s\', has no value attached' % tag)
+              exit(1)
+      else:
+        msg += '%snonspecific' % _seperator
+        
+      send_msg(s, msg)
+      print(recv_msg(s))
+      exit(0)
+    
+    elif argv[1] in ['-i', '--info']:
+      send_msg(s, 'info')
+      print(recv_msg(s))
+      exit(0)
+    
+    elif argv[1] in ['-p', '--pinfo']:
+      if len(argv) > 2:
+        send_msg(s, 'pinfo%s%s' % (_seperator, argv[2]))
+        print(recv_msg(s))
+        exit(0)
+      else:
+        print(__file__+' -p (UUID)')
+        exit(1)
+    
+    elif argv[1] in ['-t', '--total']:
+      send_msg(s, 'total_cnt')
+      print(recv_msg(s))
+      
+    elif argv[1] in ['-oc', '--online-count']:
+      send_msg(s, 'online_cnt')
+      print(recv_msg(s))
+    
+    
+    elif argv[1] in ['-a', '--add']:
+      # Not done.
+      msg = 'add'
+      tag = [x for x in ['-a', '--add'] if x in argv][0]
+      for i, arg in enumerate(argv):
+        if arg == tag:
+          try:
+            msg = _seperator.join([msg]+argv[i:])
+          except IndexError:
+            print('Add function \'%s\', has no value attached' % tag)
+            exit(1)
+      send_msg(s, msg)
+      print recv_msg(s)
+
+    elif argv[1] in ['--uptime']:
+      send_msg(s, 'uptime')
+      print(recv_msg(s))
+
+    elif argv[1] in ['--reload']:
+      send_msg(s, 'reload')
+      print(recv_msg(s))
+    
+    elif argv[1] in ['--geo']:
+      msg = 'geo'
+      tag = [x for x in ['--geo'] if x in argv][0]
+      for i, arg in enumerate(argv):
+        if arg == tag:
+          try:
+            msg += _seperator+argv[i+1]
+          except IndexError:
+            print('Add function \'%s\', has no value attached' % tag)
+            exit(1)
+      send_msg(s, msg)
+      print(recv_msg(s))
+    
+    elif argv[1] in ['-ap', '--add-provider']:
+      if not argv[2].isdigit():
+        print('-ap {time} {URLS}')
+      else:
+        if len(argv) >= 3:
+          msg = ['add_provider']
+          msg.extend(argv[2:])
+          send_msg(s, _seperator.join(msg))
+          print(recv_msg(s))
+        else:
+          print('-ap {time} {URLS}')
+    
+    elif argv[1] in ['-dp', '--del-provider']:
+      if len(argv) == 3:
+        send_msg(s, _seperator.join(['del_provider', argv[2]]))
+        print(recv_msg(s))
+    
+    elif argv[1] in ['--providers']:
+      send_msg(s, 'providers')
+      print(recv_msg(s))
+      
+    elif argv[1] in ['-rp', '--reload-providers']:
+      send_msg(s, 'reload_providers')
+      print(recv_msg(s))
+      
+  else:
+    print(help_msg)
+    exit(0)
+  pass
