@@ -1,4 +1,5 @@
 from skeleton import Provider as Skeleton
+from logic_interpreter import LogicInterpreter
 import Settings
 import json
 import requests
@@ -58,6 +59,8 @@ class Factory():
       if x.use:
         self.providers.add(x)
     
+    self.logic_interpreter = LogicInterpreter()
+    
     self.load()
     self.generate()
     
@@ -73,21 +76,9 @@ class Factory():
             for specific_protocol in settings['types']:
               if specific_protocol in Settings.collect_protocol+['nonspecific']:
                 for url in settings['types'][specific_protocol]:
+                  for nurl in self.logic_interpreter.generate(url):
+                    urls.add(nurl)
             
-                  # Read url schemas
-                  if '{' in url and '}' in url:
-                    start_url = url.split('{')[0]
-                    range_ = url.split('{')[1].split('}')[0]
-                    end_url = url.split('}')[1]
-                    
-                    s, f = range_.split('-')
-                    for x in xrange(int(s), int(f)):
-                      #print start_url+str(x)+end_url
-                      urls.add(start_url+str(x)+end_url)
-                  else:
-                    #print url
-                    urls.add(url)
-          
           except KeyError:
             raise BadFormatProvider(provider)
           

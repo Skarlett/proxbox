@@ -468,30 +468,48 @@ class ProxyFrame:
     #   self.do_tasks()
     
   def fast_miner(self, find_method='ALIVE_CNT', order_method='ASC', include_online=True, timeout=5):
-    
     if self.threads == 0:
       while self.running:
         self.miner(0)
         self.do_tasks()
     else:
-      self._container = Queue.Queue()
+      self._container = MiningQueue()
       self._miners = [Extra_miner(self, timeout) for _ in xrange(Settings.threads)]
       for b in self._miners:
         b.start()
       
-      
-      query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), Settings.mine_wait_time)
-      if not include_online:
-        query += ' AND WHERE ONLINE = 0'
-      
-      query += ' ORDER BY ' + find_method.upper() + ', CAST(LAST_MINED as INTEGER) ' + order_method
+      while self.running:
+        query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), Settings.mine_wait_time)
+        if not include_online:
+          query += ' AND WHERE ONLINE = 0'
+        
+        query += ' ORDER BY ' + find_method.upper() + ', CAST(LAST_MINED as INTEGER) ' + order_method
+  
+        # if not chunk in [None, 0] and type(chunk) is int:
+        #   query += ' LIMIT %d' % chunk
+        
+        resp = self._db.execute(query)
+        if len(resp) > 0:
+          for row in resp:
+            self._container.put(row)
+        else:
+          time.sleep(5)
+        #print self._container.unfinished_tasks
+        self.do_tasks()
 
-      # if not chunk in [None, 0] and type(chunk) is int:
-      #   query += ' LIMIT %d' % chunk
-      
-      for row in self._db.execute(query):
-        self._container.put_nowait(row)
-      
+class MiningQueue(Queue.Queue):
+  def _init(self, maxsize):
+    self.queue = set()
+  
+  def _put(self, item):
+    self.queue.add(item)
+  
+  def _get(self):
+    return self.queue.pop()
+
+  def __contains__(self, item):
+    with self.mutex:
+      return item in self.queue
 
 class Extra_miner(threading.Thread):
   def __init__(self, parent, timeout=5):
@@ -503,23 +521,24 @@ class Extra_miner(threading.Thread):
   def run(self):
     while self.parent.running:
       if not self.parent._container.empty():
-        proxy = Proxy(self.parent, *self.parent._container.get_nowait())
+        proxy = Proxy(self.parent, *self.parent._container.get())
         if not proxy.dead:
-          if time.time() - proxy.last_mined >= Settings.mine_wait_time:
+          #if time.time() - proxy.last_mined >= Settings.mine_wait_time:
             proxy.mine(self.timeout)
         else:
           self.parent._db.remove(proxy.uuid)
         self.parent._container.task_done()
+        
+      else:
+        time.sleep(5)
 
 
 if __name__ == '__main__':
-  print "loading from "+Settings.data_folder
+  #print "loading from "+Settings.data_folder
   pxf = ProxyFrame(Settings.database, Settings.threads)
   
-  pxf.fast_miner()
   try:
-    while pxf.running:
-      pxf.do_tasks()
+    pxf.fast_miner()
   except KeyboardInterrupt:
     pxf.shutdown()
     exit(1)
