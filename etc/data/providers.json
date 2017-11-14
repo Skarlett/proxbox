@@ -8,7 +8,7 @@
             "https://www.my-proxy.com/free-socks-4-proxy.html"
           ]
         },
-        "jsgen": false,
+
         "use": true
       },
       "sockslist.net": {
@@ -22,7 +22,7 @@
             "https://sockslist.net/proxy/server-socks-hide-ip-address/5"
           ]
         },
-        "jsgen": false,
+
         "use": true
       },
       "socks-proxy.net": {
@@ -32,33 +32,28 @@
             "https://www.socks-proxy.net/"
           ]
         },
-        "jsgen": false,
+
         "use": true
       },
       "proxylistplus.com": {
         "renewal": 86400,
         "types": {
           "socks5": [
-            "https://list.proxylistplus.com/Socks-List-1",
-            "https://list.proxylistplus.com/Socks-List-2",
-            "https://list.proxylistplus.com/Socks-List-3",
-            "https://list.proxylistplus.com/Socks-List-4"
+            "https://list.proxylistplus.com/Socks-List-{range(1,4)}"
           ]
         },
-        "jsgen": false,
         "use": true
       },
       "xroxy.com": {
         "renewal": 86400,
         "types": {
           "socks5": [
-            "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum={0-9}#table"
+            "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum={range(0,9)}"
           ],
           "http": [
-            "http://www.xroxy.com/proxylist.php?port=&type=All_http&ssl=&country=&latency=&reliability=&sort=reliability&desc=true&pnum={0-149}#table"
+            "http://www.xroxy.com/proxylist.php?&pnum={range(0,15)}"
           ]
         },
-        "jsgen": false,
         "use": true
       },
       "spys.one": {
@@ -78,7 +73,7 @@
             "http://spys.one/en/http-proxy-list/2/"
           ]
         },
-        "jsgen": false,
+
         "use": true
       },
       "idcloak.com": {
@@ -88,7 +83,7 @@
             "http://www.idcloak.com/proxylist/proxy-list.html"
           ]
         },
-        "jsgen": false,
+
         "use": true
       },
       "sslproxies.org": {
@@ -98,7 +93,7 @@
             "https://www.sslproxies.org/"
           ]
         },
-        "jsgen": false,
+
         "use": true
       },
       "proxygaz.com": {
@@ -108,8 +103,19 @@
             "http://proxygaz.com/"
           ]
         },
-        "jsgen": false,
         "use": true
+      },
+      "hidemy.name": {
+        "renewal": 86400,
+        "types": {
+          "socks5": [
+            "https://hidemy.name/en/proxy-list/?type=5#list",
+            "https://hidemy.name/en/proxy-list/?type=5&start=64#list",
+            "https://hidemy.name/en/proxy-list/?type=5&start=128#list"
+          ]
+        },
+        "driver":"cfscrape",
+        "use":true
       }
     }
 }

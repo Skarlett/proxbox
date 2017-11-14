@@ -36,7 +36,10 @@ class LogicInterpreter:
       if hasattr(self, func):
         
         args = command.split('(')[1].split(')')[0].replace(' ', '').split(',')
+        #try:
         resp = getattr(self, func)(*args)
+        #except
+        
         if hasattr(resp, '__iter__'):
           iteratives.append(resp)
         else:

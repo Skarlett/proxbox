@@ -82,8 +82,11 @@ class Factory():
           except KeyError:
             raise BadFormatProvider(provider)
           
+          if not 'driver' in settings:
+            settings['driver'] = None
+          
           if urls:
-            self.providers.add(Provider(provider, settings['renewal'], urls=urls, jsgen=settings['jsgen']))
+            self.providers.add(Provider(provider, settings['renewal'], urls=urls, jsgen=settings['driver']))
           else:
             logging.warn('Bad generation from '+provider)
     

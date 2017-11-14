@@ -479,22 +479,23 @@ class ProxyFrame:
         b.start()
       
       while self.running:
-        query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), Settings.mine_wait_time)
-        if not include_online:
-          query += ' AND WHERE ONLINE = 0'
-        
-        query += ' ORDER BY ' + find_method.upper() + ', CAST(LAST_MINED as INTEGER) ' + order_method
-  
-        # if not chunk in [None, 0] and type(chunk) is int:
-        #   query += ' LIMIT %d' % chunk
-        
-        resp = self._db.execute(query)
-        if len(resp) > 0:
-          for row in resp:
-            self._container.put(row)
-        else:
-          time.sleep(5)
-        #print self._container.unfinished_tasks
+        if self._container.empty():
+          query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), Settings.mine_wait_time)
+          if not include_online:
+            query += ' AND WHERE ONLINE = 0'
+          
+          query += ' ORDER BY ' + find_method.upper() + ', CAST(LAST_MINED as INTEGER) ' + order_method
+    
+          # if not chunk in [None, 0] and type(chunk) is int:
+          #   query += ' LIMIT %d' % chunk
+          
+          resp = self._db.execute(query)
+          if len(resp) > 0:
+            for row in resp:
+              self._container.put(row)
+          else:
+            time.sleep(5)
+          #print self._container.unfinished_tasks
         self.do_tasks()
 
 class MiningQueue(Queue.Queue):

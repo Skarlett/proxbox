@@ -10,12 +10,17 @@ __author__ = 'https://github.com/Skarlett'
 import re, requests
 import requests.exceptions as rexception
 import logging
-from os.path import isfile
 import Settings
+from cfscrape import create_scraper as CFscrape
+from selenium.webdriver import PhantomJS
+from os.path import isfile
 
-if Settings.enable_js_gen:
-  from selenium.webdriver import PhantomJS
-
+drivers = {
+  # driverName, Driver Object, Needs execution before use
+  'phantomjs': (PhantomJS, True),
+  'cfscrape':  (CFscrape, True),
+  'requests': (requests, False)
+}
 
 
 class Struct:
@@ -65,11 +70,9 @@ class Provider:
     self.proxies = set()
     self.badUrls = []
     self.badports = []
+    self.popBadUrls = True
     self.retry_limit = 3
-    self._scraped = False
-    self._retries = 0
-    self.jsgen = False
-    
+    self.driver = None
     for k, v in kwargs.items():
       if hasattr(self, k):
         if not k == 'urls':
@@ -77,30 +80,33 @@ class Provider:
         else:
           for x in v:
             self.urls.add(x)
+    self._scraped = False
     
-    if self.jsgen and Settings.enable_js_gen:
-      self.driver = PhantomJS()
-    else:
-      self.driver = requests
+    if self.driver.lower() in drivers:
+      driver, execution = drivers[self.driver.lower()]
+      if execution:
+        driver = driver()
+      self._driver = driver
+    else: self._driver = requests
     
-  def scrape(self, ignore_exceptions=False):
+  def scrape(self, ignore_exceptions=Settings.safe_run):
     proxies = set()
     for url in list(self.urls):
-      while self.retry_limit >= self._retries:
+      retries = 0
+      
+      while self.retry_limit >= retries:
         try:
-          r = self.driver.get(url)
-          print r
-
+          r = self._driver.get(url)
           if not hasattr(r, 'content'):
-            r = Struct(ok=len(self.driver.page_source) > 0, content=self.driver.page_source, url=url)
-          
-          self._retries = 0
+            r = Struct(ok=len(self._driver.page_source) > 0, content=self._driver.page_source, url=url)
           if r.ok:
             break
-        except rexception.Timeout:
-          self._retries += 1
+          else:
+            retries += 1
+        except (rexception.Timeout, rexception.ConnectionError):
+          retries += 1
         
-      if self._retries > self.retry_limit:
+      if retries >= self.retry_limit:
         # If this is called, r isn't declared, so it will run into an exception anyway.
         logging.error(url + ' Failed to render.')
 
@@ -112,8 +118,8 @@ class Provider:
           if not port in self.badports:
             proxies.add((ip, port))
       else:
-        self.urls.remove(r.url)
-        self.badUrls.append(r.url)
+        self.urls.remove(url)
+        self.badUrls.append(url)
 
     for x in proxies:
       self.proxies.add(x)

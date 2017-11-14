@@ -1,7 +1,7 @@
 from math import *
 
 #make a list of safe functions
-safe_list = ['math','acos', 'asin', 'atan',
+safe_list = ['acos', 'asin', 'atan',
              'atan2', 'ceil', 'cos', 'cosh',
              'degrees', 'e', 'exp', 'fabs',
              'floor', 'fmod', 'frexp', 'hypot',
@@ -10,9 +10,9 @@ safe_list = ['math','acos', 'asin', 'atan',
              'sinh', 'sqrt', 'tan', 'tanh']
 
 
-safe_dict = dict([ (k, locals().get(k, None)) for k in safe_list ])
-#add any needed builtins back in.
+safe_dict = dict([(k, locals().get(k, None)) for k in safe_list ])
 safe_dict['abs'] = abs
+
 
 def safe_eval(string):
   return eval(string, {"__builtins__":None}, safe_dict)
