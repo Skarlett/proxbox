@@ -12,6 +12,7 @@ from sqlite3worker import Sqlite3Worker
 from datetime import datetime
 from os import path
 
+from skeleton import MaxRetry
 from proxy import Proxy
 import Settings
 import commands
@@ -358,8 +359,10 @@ class ProxyFrame:
             else: # It should, but in case of glitches and subclasses, we'll assert it will have it if it fails.
               setattr(result, 'use', False)
         else:
-          result.scrape()
-        
+          try:
+            result.scrape()
+          except MaxRetry:
+            pass
         if len(result.proxies) > 0 and result.use:
           ctr += len(result.proxies)
           for ip, port in result.proxies:
@@ -435,37 +438,23 @@ class ProxyFrame:
     query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), Settings.mine_wait_time)
 
     if not include_online:
-      query += ' WHERE ONLINE = 0'
+      query += ' AND WHERE ONLINE = 0'
 
     query += ' ORDER BY ' + find_method.upper() + ', CAST(LAST_MINED as INTEGER) ' + order_method
 
     if not chunk in [None, 0] and type(chunk) is int:
       query += ' LIMIT %d' % chunk
     
-    # passing_proxies = 0
     for row in self._db.execute(query):
       proxy = Proxy(self, *row)
-      #try:
       if not proxy.dead:
-          if force or time.time() - proxy.last_mined >= Settings.mine_wait_time:
-            print "mining "+str(proxy.uuid)
-            self.current_task = "mining"
-            proxy.mine(timeout)
-          else:
-
-            # if passing_proxies >= Settings.thread_sleep_threshold:
-            #   passing_proxies = 0
-            #   if Settings.allow_thread_sleeping:
-            #     time.sleep(Settings.threading_sleep_time)
-            #
-            # passing_proxies += 1
-            self.current_task = "chilling"
+        if force or time.time() - proxy.last_mined >= Settings.mine_wait_time:
+          self.current_task = "mining"
+          proxy.mine(timeout)
+        else:
+          self.current_task = "chilling"
       else:
           self._db.remove(proxy.uuid)
-      # except ValueError:
-      #   self._db.remove(proxy.uuid)
-    # if do_tasks:
-    #   self.do_tasks()
     
   def fast_miner(self, find_method='ALIVE_CNT', order_method='ASC', include_online=True, timeout=5):
     if self.threads == 0:

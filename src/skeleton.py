@@ -82,7 +82,7 @@ class Provider:
             self.urls.add(x)
     self._scraped = False
     
-    if self.driver.lower() in drivers:
+    if type(self.driver) is str and self.driver.lower() in drivers:
       driver, execution = drivers[self.driver.lower()]
       if execution:
         driver = driver()
