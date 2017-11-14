@@ -1,10 +1,13 @@
 # px
-This tool is used for collecting, storing and checking proxy servers.
+This tool is a daemon with (over sockets) CLI tools. used for collecting (Sqlite3), storing and checking proxy servers.
 Current Version: 1.0.5
+
 ### Change list
   + Added sqlite3worker
   + Added multithreaded proxy scanning
-
+  + Added Extensions framework for adding custom website crawls
+  + Added logic expressions in `etc/data/provider.json`
+  
 ### Todo
     [X] Safe run
     [X] Add support for http proxies
@@ -66,13 +69,18 @@ Current Version: 1.0.5
 #### Configuration
 You will find in `src/Settings.py` configuration for the program, these options are yet to be documented due to the fact they are ever changing. Until further notice, there will be no efforts to document them other than their describing names.
 
-### Global Installation (Linux)
-This will install the script under /etc/init.d/px-daemon, run it through a user named PX and install utility commands like `px`, `geoip`, and `pxyscrape` into `/usr/sbin`
+### Installation (Linux)
+The `install.sh` script will place a config daemon file under /etc/init.d/px-daemon, run it through a user named PX and install utility commands like `px`, `geoip`, and `pxyscrape` into `/usr/sbin`.
 
     sudo ./install.sh
     px -i
 
-###### Local run
+###### Errors and output
+  + Errors: `/var/log/px-daemon.err`
+  + stdout: `/var/log/px-daemon.log`
+
+
+###### Run without `install.sh`
     cd /path/to/dir
     python src/px-daemon.py &
     ./px -i
@@ -110,6 +118,7 @@ This is also the case you should use if `px` ever returns `"ProxyMiner isn't onl
 
     sh /etc/init.d/px-daemon start
 
+
 ###### geoip
 A very simple tool with one function,
    
@@ -134,6 +143,8 @@ This file is unique in some ways, it contains all the places as to where to get 
 
 `type (socks5|http|nonspecific)` This contains the protocol, if a source specifically gives a certain protocol, this should be specified. In unpredictable enviorments, `nonspecific` should be used instead of a protocol.
 
+`driver (requests|cfscrape|phantomjs)` This contains which driver you'd like to use collect the proxies. PhantomJS is untested.
+
 In the url list field under `types`, there is logic the can be applied to quickly generate predictable url strings.
 The current implied syntax is currently as following.
 
@@ -149,24 +160,36 @@ The current implied syntax is currently as following.
             "socks5": ["http://socks5proxies.com/page/1"],
             "nonspecific":["http://anyprotocol-proxies.com/page/1"]
           },
-          "jsgen":false,
           "use":true
         }
        /* end of entry */
       }
     }
 
+#### Logic implementation in Providers.json
+  In the url lists, under `types`, all operations below when braced around `{}`
+
 
 ###### Range Operator
-This specific operator will yield multiple urls from a single one, by iterating the place `{` and `}` and replacing it with a number between its iterations.
+This specific operator will yield multiple urls from a single one, by iterating the place and replacing it with a number between its iterations.
 
-    http://myproxies.com/page/{0-20}/
+    http://myproxies.com/page/{range(0,20)}/
+    ... (Output) ...
+    http://myproxies.com/page/0/
+    http://myproxies.com/page/1/
+    http://myproxies.com/page/2/
+    ...
 
+##### Eval
+This was more for test than practicality, but might be added to the keyword `renewal`. It will eval math statements including some math functions.
 
+    http://myproxies.com/{eval(5+6+sin(4))}
+ 
 
-##### Errors and output
-  + Errors: `/var/log/px-daemon.err`
-  + stdout: `/var/log/px-daemon.log`
+###### Passive Substitutions
+These were idea, and I should add more, but all I came up with for now was to plug strftime into the string. I realize that since urls can contains `%`, their expressions will share braces like above.
+
+    http://myproxies.com/{%d-%m-%Y}
 
 
 ##### Notes
