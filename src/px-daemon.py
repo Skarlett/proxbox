@@ -7,10 +7,11 @@ import time
 import logging
 import socket
 import threading
+import Queue
 from sqlite3worker import Sqlite3Worker
 from datetime import datetime
 from os import path
-
+from cogs import MaxRetry
 from proxy import Proxy
 import Settings
 import commands
@@ -58,19 +59,6 @@ class InstanceRunning(Error):
   '''
   pass
 
-
-class Extra_miner(threading.Thread):
-  def __init__(self, f, *args):
-    threading.Thread.__init__(self)
-    self.daemon = True
-    self.args = args
-    self.f = f
-    self.running = False
-  
-  def run(self):
-    self.running = True
-    while self.running:
-      self.f(*self.args)
 
 
 class User():
@@ -241,7 +229,7 @@ class ProxyFrameDB(Sqlite3Worker):
     except: return False
   
 class ProxyFrame:
-  def __init__(self, proxyDbLoc, threads=2):
+  def __init__(self, proxyDbLoc, threads=Settings.threads):
     self._db = ProxyFrameDB(proxyDbLoc)
     
     # Extra stuff
@@ -261,7 +249,9 @@ class ProxyFrame:
     self.current_task = "init"
     self._miners = []
     self.running = True
-    self.thread_cnt = threads
+    self.threads = threads
+    self._container = None
+
     
     if self._db.first_run or self._db.getTotal() <= 0:
       logging.error('Not enough proxies in DB, running proxy scrape first.')
@@ -368,8 +358,10 @@ class ProxyFrame:
             else: # It should, but in case of glitches and subclasses, we'll assert it will have it if it fails.
               setattr(result, 'use', False)
         else:
-          result.scrape()
-        
+          try:
+            result.scrape()
+          except MaxRetry:
+            pass
         if len(result.proxies) > 0 and result.use:
           ctr += len(result.proxies)
           for ip, port in result.proxies:
@@ -442,74 +434,109 @@ class ProxyFrame:
     :param find_method: ALIVE_CNT or DEAD_CNT
     :return:
     '''
-    query = 'SELECT * FROM PROXY_LIST'
-  
+
+    query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), Settings.mine_wait_time)
+
+
     if not include_online:
-      query += ' WHERE ONLINE = 0'
-  
-    query += ' ORDER BY ' + find_method.upper() + ', CAST(LAST_MINED as INTEGER) '+order_method
-  
+      query += ' AND WHERE ONLINE = 0'
+
+    query += ' ORDER BY ' + find_method.upper() + ', CAST(LAST_MINED as INTEGER) ' + order_method
+
     if not chunk in [None, 0] and type(chunk) is int:
       query += ' LIMIT %d' % chunk
-      
+    
     for row in self._db.execute(query):
       proxy = Proxy(self, *row)
-      #try:
       if not proxy.dead:
-          if force or time.time() - proxy.last_mined >= Settings.mine_wait_time:
-            self.current_task = "mining"
-            proxy.mine(timeout)
-          else:
-            #print "passing"
-            self.current_task = "chilling"
+        if force or time.time() - proxy.last_mined >= Settings.mine_wait_time:
+          self.current_task = "mining"
+          proxy.mine(timeout)
+        else:
+          self.current_task = "chilling"
       else:
           self._db.remove(proxy.uuid)
-      # except ValueError:
-      #   self._db.remove(proxy.uuid)
-    # if do_tasks:
-    #   self.do_tasks()
     
-  def fast_miner(self):
-    
-    def wrapper(*args, **kwargs):
-      while self.running:
-        # if Settings.safe_run:
-        #   try:
-        #     self.miner(*args, **kwargs)
-        #   except Exception:
-        #     pass
-        # else:
-          self.miner(*args, **kwargs)
-    
-    if self.thread_cnt == 0:
+  def fast_miner(self, find_method='ALIVE_CNT', order_method='ASC', include_online=True, timeout=5):
+    if self.threads == 0:
       while self.running:
         self.miner(0)
+        self.do_tasks()
     else:
-      instruct_set = {
-        0: dict(target=wrapper, kwargs=dict(chunk=0, find_method='ALIVE_CNT', order_method='ASC', force=False, include_online=True, timeout=5)),
-        1: dict(target=wrapper, kwargs=dict(chunk=0, find_method='ALIVE_CNT', order_method='DESC', force=False, include_online=True, timeout=5)),
-        2: dict(target=wrapper, kwargs=dict(chunk=0, find_method='DEAD_CNT', order_method='ASC', force=False, include_online=True, timeout=5)),
-        3: dict(target=wrapper, kwargs=dict(chunk=0, find_method='DEAD_CNT', order_method='DESC', force=False, include_online=True, timeout=5)),
-       }
-      assert len(instruct_set) >= self.thread_cnt
+      self._container = MiningQueue()
+      self._miners = [Extra_miner(self, timeout) for _ in xrange(Settings.threads)]
+      for b in self._miners:
+        b.start()
       
-      for i in xrange(0, self.thread_cnt):
-        t=threading.Thread(**instruct_set[i])
-        t.daemon = True
-        self._miners.append(t)
-        t.start()
-      
-if __name__ == '__main__':
-  print "loading from "+Settings.data_folder
-  pxf = ProxyFrame(Settings.database, 4)
+      while self.running:
+        if self._container.empty():
+          query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), Settings.mine_wait_time)
+          if not include_online:
+            query += ' AND WHERE ONLINE = 0'
+          
+          query += ' ORDER BY ' + find_method.upper() + ', CAST(LAST_MINED as INTEGER) ' + order_method
+    
+          # if not chunk in [None, 0] and type(chunk) is int:
+          #   query += ' LIMIT %d' % chunk
+          
+          resp = self._db.execute(query)
+          if len(resp) > 0:
+            for row in resp:
+              self._container.put(row)
+          else:
+            time.sleep(5)
+          #print self._container.unfinished_tasks
+        self.do_tasks()
+
+class MiningQueue(Queue.Queue):
+  def _init(self, maxsize):
+    self.queue = set()
   
-  pxf.fast_miner()
+  def _put(self, item):
+    self.queue.add(item)
+  
+  def _get(self):
+    return self.queue.pop()
+
+  def __contains__(self, item):
+    with self.mutex:
+      return item in self.queue
+
+class Extra_miner(threading.Thread):
+  def __init__(self, parent, timeout=5):
+    threading.Thread.__init__(self)
+    self.daemon = True
+    self.parent = parent
+    self.timeout = timeout
+    
+  def run(self):
+    while self.parent.running:
+      if not self.parent._container.empty():
+        proxy = Proxy(self.parent, *self.parent._container.get())
+        if not proxy.dead:
+          #if time.time() - proxy.last_mined >= Settings.mine_wait_time:
+            proxy.mine(self.timeout)
+        else:
+          self.parent._db.remove(proxy.uuid)
+        self.parent._container.task_done()
+        
+      else:
+        time.sleep(5)
+
+
+if __name__ == '__main__':
+  #print "loading from "+Settings.data_folder
+  pxf = ProxyFrame(Settings.database, Settings.threads)
+  
   try:
-    while pxf.running:
-      pxf.do_tasks()
+    pxf.fast_miner()
   except KeyboardInterrupt:
     pxf.shutdown()
     exit(1)
+    
+  
+
+
   # while RUNNING:
   #   try:
   #     if Settings.safe_run:

@@ -1,12 +1,15 @@
 # px
-This tool is used for collecting, storing and checking proxy servers.
+This tool is a daemon with (over sockets) CLI tools. used for collecting (Sqlite3), storing and checking proxy servers.
 Current Version: 1.0.5
+
 ### Change list
   + Added sqlite3worker
-
+  + Added multithreaded proxy scanning
+  + Added Extensions framework for adding custom website crawls
+  + Added logic expressions in `etc/data/provider.json`
+  
 ### Todo
     [X] Safe run
-    [ ] Add dynamic logging handle for debugging outside of development
     [X] Add support for http proxies
     [ ] determine if http proxy is protected by ssl/tsl or whatever new variant.
     [ ] Add support for socks4 proxies
@@ -27,7 +30,6 @@ Current Version: 1.0.5
     [X] converge factory and proxyframe so both providers file and database are purged
     [X] switch over to sqlite3worker eventually, maybe a modified version.
     [ ] massscan le internet, once i figure out how to collect banners.
-    [ ] optimize scanning ips in providers
 
 
 
@@ -67,13 +69,18 @@ Current Version: 1.0.5
 #### Configuration
 You will find in `src/Settings.py` configuration for the program, these options are yet to be documented due to the fact they are ever changing. Until further notice, there will be no efforts to document them other than their describing names.
 
-### Global Installation (Linux)
-This will install the script under /etc/init.d/px-daemon, run it through a user named PX and install utility commands like `px`, `geoip`, and `pxyscrape` into `/usr/sbin`
+### Installation (Linux)
+The `install.sh` script will place a config daemon file under /etc/init.d/px-daemon, run it through a user named PX and install utility commands like `px`, `geoip`, and `pxyscrape` into `/usr/sbin`.
 
     sudo ./install.sh
     px -i
 
-###### Local run
+###### Errors and output
+  + Errors: `/var/log/px-daemon.err`
+  + stdout: `/var/log/px-daemon.log`
+
+
+###### Run without `install.sh`
     cd /path/to/dir
     python src/px-daemon.py &
     ./px -i
@@ -111,6 +118,7 @@ This is also the case you should use if `px` ever returns `"ProxyMiner isn't onl
 
     sh /etc/init.d/px-daemon start
 
+
 ###### geoip
 A very simple tool with one function,
    
@@ -135,34 +143,53 @@ This file is unique in some ways, it contains all the places as to where to get 
 
 `type (socks5|http|nonspecific)` This contains the protocol, if a source specifically gives a certain protocol, this should be specified. In unpredictable enviorments, `nonspecific` should be used instead of a protocol.
 
+`driver (requests|cfscrape|phantomjs)` This contains which driver you'd like to use collect the proxies. PhantomJS is untested.
+
 In the url list field under `types`, there is logic the can be applied to quickly generate predictable url strings.
 The current implied syntax is currently as following.
 
-###### Range Operator
-This specific operator will yield multiple urls from a single one, by iterating the place `{` and `}` and replacing it with a number between its iterations.
-
-    http://myproxies.com/page/{0-20}/
-
-
-A single entry example of this would be...
-
-        "xroxy.com": {
-            "renewal": 86400,
-            "types": {
-              "socks5": [
-                "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum={0-9}#table"
-              ],
-              "http": [
-                "http://www.xroxy.com/proxylist.php?port=&type=All_http&ssl=&country=&latency=&reliability=&sort=reliability&desc=true&pnum={0-149}#table"
-             ]
-            },
-            "jsgen":false,
-            "use": true
+###### Example Entry:
+    
+    {
+      "providers": {
+        /* Root Url for string ID */
+        "provider.com": {
+          "renewal": 86400, /* (24h) How often to scrape in seconds*/
+          "types": {
+            "http: ["http://httpproxies.com/page/1"],
+            "socks5": ["http://socks5proxies.com/page/1"],
+            "nonspecific":["http://anyprotocol-proxies.com/page/1"]
+          },
+          "use":true
         }
+       /* end of entry */
+      }
+    }
 
-##### Errors and output
-  + Errors: `/var/log/px-daemon.err`
-  + stdout: `/var/log/px-daemon.log`
+#### Logic implementation in Providers.json
+  In the url lists, under `types`, all operations below when braced around `{}`
+
+
+###### Range Operator
+This specific operator will yield multiple urls from a single one, by iterating the place and replacing it with a number between its iterations.
+
+    http://myproxies.com/page/{range(0,20)}/
+    ... (Output) ...
+    http://myproxies.com/page/0/
+    http://myproxies.com/page/1/
+    http://myproxies.com/page/2/
+    ...
+
+##### Eval
+This was more for test than practicality, but might be added to the keyword `renewal`. It will eval math statements including some math functions.
+
+    http://myproxies.com/{eval(5+6+sin(4))}
+ 
+
+###### Passive Substitutions
+These were idea, and I should add more, but all I came up with for now was to plug strftime into the string. I realize that since urls can contains `%`, their expressions will share braces like above.
+
+    http://myproxies.com/{%d-%m-%Y}
 
 
 ##### Notes
