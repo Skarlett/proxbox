@@ -11,8 +11,7 @@ import Queue
 from sqlite3worker import Sqlite3Worker
 from datetime import datetime
 from os import path
-
-from skeleton import MaxRetry
+from cogs import MaxRetry
 from proxy import Proxy
 import Settings
 import commands

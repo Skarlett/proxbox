@@ -1,6 +1,6 @@
 from proxy import Proxy
 from requests import get
-from skeleton import IPPortPatternGlobal, IPPortPatternLine
+from cogs import IPPortPatternGlobal, IPPortPatternLine
 from geo import Locator
 from os import path
 from utils import percentage, h_time

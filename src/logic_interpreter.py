@@ -3,16 +3,9 @@ from time import gmtime, strftime
 from utils import safe_eval
 
 
-class Exception(Exception):
-  pass
-
-
-class ProgrammingError(Exception):
-  pass
-
-
-class SyntaxError(ProgrammingError):
-  pass
+class Exception(Exception): pass
+class ProgrammingError(Exception): pass
+class SyntaxError(ProgrammingError): pass
 
 class LogicInterpreter:
   __logic_interpreter = re.compile('(?<={)(.*?)(?=})')
