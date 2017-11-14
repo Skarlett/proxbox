@@ -58,7 +58,8 @@ class commands():
     msg += '\nThreads: '+str(len(self.__parent._miners)+3)
     
     return msg
-  
+
+
   def pinfo(self, req):
     # get info about a specific proxy by uuid
     proxy = Proxy(self.__parent, *self.__parent._db.execute('SELECT * FROM PROXY_LIST WHERE UUID = ?', (req,))[0])

@@ -61,7 +61,6 @@ class InstanceRunning(Error):
 
 
 
-
 class User():
   def __init__(self, s, con, timeout=30):
     self.s = s
@@ -252,6 +251,7 @@ class ProxyFrame:
     self.running = True
     self.threads = threads
     self._container = None
+
     
     if self._db.first_run or self._db.getTotal() <= 0:
       logging.error('Not enough proxies in DB, running proxy scrape first.')
@@ -434,7 +434,9 @@ class ProxyFrame:
     :param find_method: ALIVE_CNT or DEAD_CNT
     :return:
     '''
+
     query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), Settings.mine_wait_time)
+
 
     if not include_online:
       query += ' AND WHERE ONLINE = 0'
@@ -533,6 +535,8 @@ if __name__ == '__main__':
     exit(1)
     
   
+
+
   # while RUNNING:
   #   try:
   #     if Settings.safe_run:

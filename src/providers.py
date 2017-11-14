@@ -58,6 +58,7 @@ class Factory():
                   for nurl in self.logic_interpreter.generate(url):
                     urls.add(nurl)
             
+
           except KeyError:
             raise BadFormatProvider(provider)
           
