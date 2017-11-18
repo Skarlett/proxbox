@@ -1,4 +1,4 @@
-from __init__ import HREF_FIND, Provider
+from __init__ import HREF_FIND, Provider, Settings
 import requests
 
 
@@ -7,8 +7,10 @@ USE = False
 class Pastebin(Provider):
   def __init__(self):
     r = range(1, 1000)
-    for i in [80, 81]:
-      r.remove(i)
+    if 'http' in Settings.collect_protocol:
+      for i in [80, 81]:
+        r.remove(i)
+    
     Provider.__init__(self, uuid="Pastebin.com", renewal=4*60, use=False, badports=r)
     self._scrape = self.scrape
     

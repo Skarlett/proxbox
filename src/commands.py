@@ -120,20 +120,20 @@ class commands():
   
   def providers(self):
     msg = ''
-    for i, provider in self.__parent.factory.providers:
+    for provider in self.__parent.factory.providers:
       last_scrape, alive, dead, permadead = self.__parent._db.provider_stats(provider)
-      msg += provider.uuid+'\n\tReliance: %f' \
-                           '\n\tAlive: %d' \
-                           '\n\tDead: %d' \
-                           '\n\tContributed: %d' \
-                           '\n\tLast scraped: %s' \
-                           '\n\tPermaDead: %d' % \
+      msg += provider.uuid+'\n\  Reliance: %f' \
+                           '\n\  Alive: %d' \
+                           '\n\  Dead: %d' \
+                           '\n\  Contributed: %d' \
+                           '\n\  Last scraped: %s' \
+                           '\n\  PermaDead: %d' \
+                           '\n---------------\n' % \
                            (percentage(alive, alive+dead),alive, dead, alive+dead+permadead,
                             h_time(time.time()-float(last_scrape)), permadead)
       
-      if len(self.__parent.factory.providers)-1 >= i:
-        msg += '\n'
-    return msg
+    
+    return msg.strip()
 
   def add_provider(self, renewal, jsgen=False, *urls):
     if urls:

@@ -1,7 +1,7 @@
 import json
 import logging
 from os import walk, path
-from cogs import Provider
+from cogs import Provider, drivers
 from logic_interpreter import LogicInterpreter
 import Settings
 
@@ -72,6 +72,8 @@ class Factory():
             settings['renewal'] = int(self.logic_interpreter.generate(settings['renewal']))
           
           if urls and type(settings['renewal']) is int:
+            if not settings['driver']:
+              settings['driver'] = 'requests'
             self.providers.add(Provider(provider, settings['renewal'], urls=urls, driver=settings['driver']))
           else:
             logging.warn('Bad generation from '+provider)

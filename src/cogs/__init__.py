@@ -7,11 +7,15 @@
 
 __author__ = 'https://github.com/Skarlett'
 
+import sys
+sys.path.append('..')
 import re, requests
 import requests.exceptions as rexception
 import logging
 from cfscrape import create_scraper as CFscrape
 from selenium.webdriver import PhantomJS
+import Settings
+
 
 drivers = {
   # driverName, Driver Object, Needs execution before use
@@ -111,10 +115,10 @@ class Skeleton:
         except (rexception.Timeout, rexception.ConnectionError):
           retries += 1
       
+      
       if retries >= self.retry_limit:
         # If this is called, r isn't declared, so it will run into an exception anyway.
         logging.error(url + ' Failed to render.')
-        
         if not ignore_exceptions:
           raise MaxRetry('Max url retries')
       
@@ -126,6 +130,9 @@ class Skeleton:
         self.urls.remove(url)
         self.badUrls.append(url)
     
+    if hasattr(self._driver, 'close'):
+      self._driver.close()
+      
     for x in proxies:
       self.proxies.add(x)
 
@@ -138,7 +145,3 @@ class Provider(Skeleton):
     self.use = use
     self.renewal = renewal
 
-
-# class Crawler(Provider):
-#   fake = True
-  

@@ -1,7 +1,6 @@
-from __init__ import *
+from __init__ import Provider, requests, HREF_FIND
 
 USE = False
-
 
 class live_socks(Provider):
   def __init__(self):
@@ -9,7 +8,6 @@ class live_socks(Provider):
     for x in HREF_FIND.findall(requests.get('http://www.live-socks.net/search/label/Socks%205').content):
       # Our super weird pythonic parsing one liner
       x = x[::-1].split('#', 1)[0][::-1]
-      
       if 'socks-5' in x:
         self.urls.add(x)
     
