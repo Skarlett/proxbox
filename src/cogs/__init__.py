@@ -112,9 +112,13 @@ class Skeleton:
             break
           else:
             retries += 1
-        except (rexception.Timeout, rexception.ConnectionError):
+        except rexception.Timeout:
           retries += 1
-      
+        except rexception.ConnectionError:
+          retries += 1
+        except Exception:
+          logging.exception('Unhandled exception')
+          retries += 1
       
       if retries >= self.retry_limit:
         # If this is called, r isn't declared, so it will run into an exception anyway.

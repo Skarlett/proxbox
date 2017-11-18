@@ -86,6 +86,7 @@ mine_wait_time = 60 * 60  # 1 hour
 # Connection info
 global_timeout = 30
 socket_backlog = 1
+max_sql_queue_size = 1000
 local_conn = ('127.0.0.1', 52312)
 
 ##

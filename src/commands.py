@@ -44,12 +44,12 @@ class commands():
   ###
   def info(self):
     try:
-      msg = 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: [%s] [%s]\nStatus: [%s]' %\
+      msg = 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: [%s] [%s]\nStatus: [%s]\nProviders: %d' %\
            (self.total_cnt(), self.online_cnt(), self.__parent.mine_cnt, self.uptime(), str(self.__parent.last_scraped[0]),
-            h_time(time.time()-float(self.__parent.last_scraped[1])), self.__parent.current_task)
+            h_time(time.time()-float(self.__parent.last_scraped[1])), self.__parent.current_task, len(self.__parent.factory.providers))
     except:
-      msg = 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: None\nStatus: [%s]' %\
-           (self.total_cnt(), self.online_cnt(), self.__parent.mine_cnt, self.uptime(), self.__parent.current_task)
+      msg = 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: None\nStatus: [%s]\nProviders: %d' %\
+           (self.total_cnt(), self.online_cnt(), self.__parent.mine_cnt, self.uptime(), self.__parent.current_task, len(self.__parent.factory.providers))
     
     msg += '\n'
     for x in Settings.collect_protocol:

@@ -149,9 +149,9 @@ class Communicate_CLI(threading.Thread):
 
 
 class ProxyFrameDB(Sqlite3Worker):
-  def __init__(self, fp):
+  def __init__(self, fp, queue_size=Settings.max_sql_queue_size):
     self.fp = fp
-    Sqlite3Worker.__init__(self, fp)
+    Sqlite3Worker.__init__(self, fp, max_queue_size=queue_size)
     r = self.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='PROXY_LIST';")
     if not r:
       self.execute('''CREATE TABLE PROXY_LIST(
