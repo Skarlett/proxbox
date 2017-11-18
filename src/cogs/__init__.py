@@ -7,11 +7,15 @@
 
 __author__ = 'https://github.com/Skarlett'
 
+import sys
+sys.path.append('..')
 import re, requests
 import requests.exceptions as rexception
 import logging
 from cfscrape import create_scraper as CFscrape
 from selenium.webdriver import PhantomJS
+import Settings
+
 
 drivers = {
   # driverName, Driver Object, Needs execution before use
@@ -59,7 +63,8 @@ def proxyScrape(data):
       ip, port = thing
       ip = strip_chars(ip, chars='\t\n ')
       port = strip_chars(port, chars='\t\n ')
-      yield ip, port
+      if ip and port:
+        yield ip, port
 
 
 class Skeleton:
@@ -110,21 +115,24 @@ class Skeleton:
         except (rexception.Timeout, rexception.ConnectionError):
           retries += 1
       
+      
       if retries >= self.retry_limit:
         # If this is called, r isn't declared, so it will run into an exception anyway.
         logging.error(url + ' Failed to render.')
-        
         if not ignore_exceptions:
           raise MaxRetry('Max url retries')
       
       if r.ok:
         for ip, port in proxyScrape(r.content):
-          if not port in self.badports:
-            proxies.add((ip, port))
+          if not int(port) in self.badports:
+            proxies.add((ip, int(port)))
       else:
         self.urls.remove(url)
         self.badUrls.append(url)
     
+    if hasattr(self._driver, 'close'):
+      self._driver.close()
+      
     for x in proxies:
       self.proxies.add(x)
 
@@ -137,7 +145,3 @@ class Provider(Skeleton):
     self.use = use
     self.renewal = renewal
 
-
-# class Crawler(Provider):
-#   fake = True
-  

@@ -58,8 +58,7 @@ class commands():
     msg += '\nThreads: '+str(len(self.__parent._miners)+3)
     
     return msg
-
-
+  
   def pinfo(self, req):
     # get info about a specific proxy by uuid
     proxy = Proxy(self.__parent, *self.__parent._db.execute('SELECT * FROM PROXY_LIST WHERE UUID = ?', (req,))[0])
@@ -121,14 +120,20 @@ class commands():
   
   def providers(self):
     msg = ''
-    for i, provider in enumerate(self.__parent.factory.providers):
-      last_scrape, alive, dead = self.__parent._db.provider_stats(provider)
-      total = self.__parent._db.execute('SELECT Count(*) from PROXY_LIST where PROVIDER = ?', (provider.uuid, ))[0][0]
-      msg += provider.uuid+'\n\tReliance: %f\n\tAlive: %d\n\tDead: %d\n\tContributed: %d\n\tLast scraped: %s' %\
-                           (percentage(alive, alive+dead), alive, dead, total, h_time(time.time()-float(last_scrape)))
-      if len(self.__parent.factory.providers)-1 >= i:
-        msg += '\n'
-    return msg
+    for provider in self.__parent.factory.providers:
+      last_scrape, alive, dead, permadead = self.__parent._db.provider_stats(provider)
+      msg += provider.uuid+'\n\  Reliance: %f' \
+                           '\n\  Alive: %d' \
+                           '\n\  Dead: %d' \
+                           '\n\  Contributed: %d' \
+                           '\n\  Last scraped: %s' \
+                           '\n\  PermaDead: %d' \
+                           '\n---------------\n' % \
+                           (percentage(alive, alive+dead),alive, dead, alive+dead+permadead,
+                            h_time(time.time()-float(last_scrape)), permadead)
+      
+    
+    return msg.strip()
 
   def add_provider(self, renewal, jsgen=False, *urls):
     if urls:
