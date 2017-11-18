@@ -1,12 +1,13 @@
 # px
 This tool is a daemon with (over sockets) CLI tools. used for collecting (Sqlite3), storing and checking proxy servers.
-Current Version: 1.0.5
+Current Version: 1.0.7
 
 ### Change list
   + Added sqlite3worker
   + Added multithreaded proxy scanning
-  + Added Extensions framework for adding custom website crawls
+  + Added portable mods for adding custom website crawls
   + Added logic expressions in `etc/data/provider.json`
+  + Added portable moddable logical expressions
   
 ### Todo
     [X] Safe run
