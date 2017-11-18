@@ -61,6 +61,7 @@ class InstanceRunning(Error):
 
 
 
+
 class User():
   def __init__(self, s, con, timeout=30):
     self.s = s
@@ -202,13 +203,13 @@ class ProxyFrameDB(Sqlite3Worker):
   
   def provider_stats(self, provider):
     dead = alive = 0
-    for x in self.execute('SELECT * FROM PROXY_LIST WHERE PROVIDER = ?', (provider.uuid,)):
-      p = Proxy(self, *x)
-      dead += p.dead_cnt
-      alive += p.alive_cnt
-    prev, epoch = self.execute('SELECT DEAD_CNT, EPOCH FROM RENEWAL WHERE UUID = ?', (provider.uuid,))[0]
+    for a, d in self.execute('SELECT DEAD, ALIVE FROM PROXY_LIST WHERE PROVIDER = ?', (provider.uuid,)):
+      dead += a
+      alive += d
     
-    return epoch, alive, dead
+    permadead, epoch = self.execute('SELECT DEAD_CNT, EPOCH FROM RENEWAL WHERE UUID = ?', (provider.uuid,))[0]
+    
+    return epoch, alive, dead, permadead
     
     
   def modify(self, uuid, var, value):
@@ -251,7 +252,6 @@ class ProxyFrame:
     self.running = True
     self.threads = threads
     self._container = None
-
     
     if self._db.first_run or self._db.getTotal() <= 0:
       logging.error('Not enough proxies in DB, running proxy scrape first.')
@@ -362,10 +362,11 @@ class ProxyFrame:
             result.scrape()
           except MaxRetry:
             pass
-        if len(result.proxies) > 0 and result.use:
-          ctr += len(result.proxies)
-          for ip, port in result.proxies:
-            self._db.add(ip, port, provider=result.uuid)
+        if len(result.proxies) > 0:
+          if result.use:
+            ctr += len(result.proxies)
+            for ip, port in result.proxies:
+              self._db.add(ip, port, provider=result.uuid)
         else:
           logging.warn('Failed provider [{}] Dumping object into logs.\n{}\n'.format(result.uuid.upper(), vars(result)))
         self._db.execute('UPDATE RENEWAL SET EPOCH = ? WHERE UUID = ?', (str(time.time()), result.uuid))
@@ -434,9 +435,7 @@ class ProxyFrame:
     :param find_method: ALIVE_CNT or DEAD_CNT
     :return:
     '''
-
     query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), Settings.mine_wait_time)
-
 
     if not include_online:
       query += ' AND WHERE ONLINE = 0'
@@ -476,9 +475,6 @@ class ProxyFrame:
           
           query += ' ORDER BY ' + find_method.upper() + ', CAST(LAST_MINED as INTEGER) ' + order_method
     
-          # if not chunk in [None, 0] and type(chunk) is int:
-          #   query += ' LIMIT %d' % chunk
-          
           resp = self._db.execute(query)
           if len(resp) > 0:
             for row in resp:
@@ -535,8 +531,6 @@ if __name__ == '__main__':
     exit(1)
     
   
-
-
   # while RUNNING:
   #   try:
   #     if Settings.safe_run:

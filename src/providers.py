@@ -1,6 +1,6 @@
 import json
 import logging
-from os import walk
+from os import walk, path
 from cogs import Provider
 from logic_interpreter import LogicInterpreter
 import Settings
@@ -17,24 +17,28 @@ class Factory():
     self.fp = fp
     self.json = None
     self.providers = set()
+    self.exts = []
+    
     self.load()
     self.generate()
     self.load_ext()
-    self.exts = []
-  
+    print self.exts
   
   def load_ext(self):
+    #print "loading exts."
     modules = []
-    for root, dirs, files in walk('cogs'):
+    print path.join(path.split(__file__)[0], 'cogs')
+    for root, dirs, files in walk(path.join(path.split(__file__)[0], 'cogs')):
       for x in files:
         if not x.startswith('__') and x.endswith('.py'):
           modules.append(x.split('.')[0])
       break
-    
+    #print modules
     for mod in modules:
       _mod = __import__("cogs." + mod).__dict__[mod]
+      #print _mod
       if hasattr(_mod, 'USE'):
-        if hasattr(_mod, 'setup') and callable(_mod.setup):
+        if hasattr(_mod, 'setup'):
           _mod.setup(self)
           self.exts.append(_mod)
         else:
@@ -58,14 +62,16 @@ class Factory():
                   for nurl in self.logic_interpreter.generate(url):
                     urls.add(nurl)
             
-
           except KeyError:
             raise BadFormatProvider(provider)
           
           if not 'driver' in settings:
             settings['driver'] = None
           
-          if urls:
+          if type(settings['renewal']) is str:
+            settings['renewal'] = int(self.logic_interpreter.generate(settings['renewal']))
+          
+          if urls and type(settings['renewal']) is int:
             self.providers.add(Provider(provider, settings['renewal'], urls=urls, driver=settings['driver']))
           else:
             logging.warn('Bad generation from '+provider)

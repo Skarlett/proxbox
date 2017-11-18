@@ -59,7 +59,8 @@ def proxyScrape(data):
       ip, port = thing
       ip = strip_chars(ip, chars='\t\n ')
       port = strip_chars(port, chars='\t\n ')
-      yield ip, port
+      if ip and port:
+        yield ip, port
 
 
 class Skeleton:
@@ -119,8 +120,8 @@ class Skeleton:
       
       if r.ok:
         for ip, port in proxyScrape(r.content):
-          if not port in self.badports:
-            proxies.add((ip, port))
+          if not int(port) in self.badports:
+            proxies.add((ip, int(port)))
       else:
         self.urls.remove(url)
         self.badUrls.append(url)
