@@ -1,5 +1,6 @@
 # px
 This tool is a daemon with (over sockets) CLI tools. used for collecting (Sqlite3), storing and checking proxy servers.
+
 Current Version: 1.0.7
 
 ### Change list
@@ -63,18 +64,24 @@ Current Version: 1.0.7
 ### Known risks
   + Its probably common knowledge, but we never explicitly hardcoded each commands, so it's probably more than possible for a raw injection of python into the implementation of the socket structure that communicates `px` and `pxf.py/px-daemon`
 
-### Implementation of install
-  So I figured that the safest way to do this was to make a user called `px` and then make `/opt/px` owned by it, but go ahead and run the daemon as that user so if there were to an injection in `px-daemon` then, it would atleast miminalize the fact they no longer have root privelleges. Further more since it would be a socket injection it is highly recommended to run this on local host, with the port its listening on closed. ( Later on I need to make px-daemon.py owned by root and give perms to only read and exec)
 
-
-#### Configuration
+### Configuration
 You will find in `src/Settings.py` configuration for the program, these options are yet to be documented due to the fact they are ever changing. Until further notice, there will be no efforts to document them other than their describing names.
 
 ### Installation (Linux)
-The `install.sh` script will place a config daemon file under /etc/init.d/px-daemon, run it through a user named PX and install utility commands like `px`, `geoip`, and `pxyscrape` into `/usr/sbin`.
+Running the following will install the dependencies and mark files as executable.
 
     sudo ./install.sh
     px -i
+
+While running
+
+    sudo ./install.sh global
+    
+Will install the program to `/opt/px` under the user `px` and the following command line tools will place symbolic soft links in `/usr/sbin`
+  + `px` - This is the tool used for directly interacting with the daemon
+  + `geoip` - This tool gives a little more info about IP addresses.
+  + `pxyscrape` - This tool is in direct connection to `px-daemon`'s scraping lib.
 
 ###### Errors and output
   + Errors: `/var/log/px-daemon.err`
