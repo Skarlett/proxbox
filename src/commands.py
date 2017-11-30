@@ -53,11 +53,11 @@ class commands():
     
     msg += '\n'
     for x in Settings.collect_protocol:
-      msg += '\n'+x+': '+str(self.__parent._db.execute('SELECT COUNT(*) FROM PROXY_LIST WHERE PROTOCOL = ?', (x,))[0][0])
+      msg += '{}:{}\n'.format(x, str(self.__parent._db.execute('SELECT COUNT(*) FROM PROXY_LIST WHERE PROTOCOL = ?', (x,))[0][0]) or 0)
 
     msg += '\nThreads: '+str(len(self.__parent._miners)+3)
     
-    return msg
+    return msg.strip()
   
   def pinfo(self, req):
     # get info about a specific proxy by uuid
@@ -121,16 +121,15 @@ class commands():
   def providers(self):
     msg = ''
     for provider in self.__parent.factory.providers:
-      last_scrape, alive, dead, permadead = self.__parent._db.provider_stats(provider)
+      last_scrape, alive, dead = self.__parent._db.provider_stats(provider)
       msg += provider.uuid+'\n\  Reliance: %f' \
                            '\n\  Alive: %d' \
                            '\n\  Dead: %d' \
                            '\n\  Contributed: %d' \
                            '\n\  Last scraped: %s' \
-                           '\n\  PermaDead: %d' \
                            '\n---------------\n' % \
-                           (percentage(alive, alive+dead),alive, dead, alive+dead+permadead,
-                            h_time(time.time()-float(last_scrape)), permadead)
+                           (percentage(alive, alive+dead),alive, dead, alive+dead,
+                            h_time(time.time()-float(last_scrape)))
       
     
     return msg.strip()

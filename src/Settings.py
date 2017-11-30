@@ -1,7 +1,7 @@
 ####
 # Default stuff
 ####
-from os import path, mkdir
+from os import path
 from urllib import urlretrieve
 import logging
 import requests
@@ -20,63 +20,50 @@ data_folder = path.join(etc_folder, 'data')
 backup_folder = path.join(data_folder, 'backups')
 # log_folder = path.join(etc_folder, 'logs')
 
-for d in [etc_folder, bin_folder, data_folder, backup_folder]:
-  if not path.isdir(d):
-    logging.info('made directory: '+str(d))
-    mkdir(d)
-
-
-###
-# Constants
-####
-
-try:
-  public_ip = requests.get('http://ipv4bot.whatismyipaddress.com/').content.strip()
-except:
-  logging.error("No internet Connection.")
-  #exit(1)
-
-version = "1.0.5"
-_version = 0
-
 ##
-# File setup
+# Files
 ###
-
 database = path.join(data_folder, 'main.db')
 providers = path.join(data_folder, 'providers.json')
 log = path.join(maindir, 'main.log')
 
 
-##
-# Phantomjs stuff.
-###
-enable_js_gen = False
-phantomjs_binary = path.join(bin_folder, 'phantomjs')
+public_ip = None
+
+try:
+  public_ip = requests.get('http://ipv4bot.whatismyipaddress.com/').content.strip()
+except:
+  logging.error("No internet Connection.")
+ 
+#exit(1)
+
+version = "1.1.0"
+_version = 0
 
 
-if not path.isfile(providers):
-  logging.info('retrieving providers.json into '+str(providers))
-  try:
-    urlretrieve('https://raw.githubusercontent.com/Skarlett/px/master/etc/data/providers.json', providers)
-  except:
-    print "Fatal error. Couldn\'t recieve providers.json"
 #################
 # Configuration #
 #################
 
 safe_run = False
 backup_at = 60*60*24*7 # 7 days
+keep_unregonized_protocols = False
+
+##
+# Collection policies
+###
+collect_protocol = [
+  'socks5',
+  'socks4'
+  'https'
+  'http'
+]
+
 ##
 # Remove policies
 ###
-
-remove_by_reliance = .02
+remove_by_reliance = .10
 remove_when_total = 25 # Greater than
-collect_protocol = [
-  'socks5',
-  #'http'
-]
 
 ##
 # Proxy mining

@@ -15,6 +15,8 @@ import logging
 from cfscrape import create_scraper as CFscrape
 from selenium.webdriver import PhantomJS
 import Settings
+from utils import Struct
+
 
 
 drivers = {
@@ -24,13 +26,6 @@ drivers = {
   'requests': (requests, False)
 }
 HREF_FIND = re.compile(r'href=[\'"]?([^\'" >]+)')
-
-class Struct:
-  def __init__(self, **entries):
-    self.__dict__.update(entries)
-  
-  def update(self, **entries):
-    self.__dict__.update(entries)
 
 
 IPPattern = re.compile(
@@ -105,35 +100,38 @@ class Skeleton:
       
       while self.retry_limit >= retries:
         try:
-          r = self._driver.get(url)
+          try:
+            r = self._driver.get(url)
+          except:
+            r = Struct(ok=False, content=None)
           if not hasattr(r, 'content'):
             r = Struct(ok=len(self._driver.page_source) > 0, content=self._driver.page_source, url=url)
           if r.ok:
             break
           else:
             retries += 1
-        except rexception.Timeout:
+        except Exception as err:
           retries += 1
-        except rexception.ConnectionError:
-          retries += 1
-        except Exception:
-          logging.exception('Unhandled exception')
-          retries += 1
+          if not err in [rexception.Timeout, rexception.ConnectionError, rexception.RetryError]:
+            logging.exception('Unhandled exception '+err.__class__.__name__)
       
       if retries >= self.retry_limit:
-        # If this is called, r isn't declared, so it will run into an exception anyway.
         logging.error(url + ' Failed to render.')
         if not ignore_exceptions:
           raise MaxRetry('Max url retries')
+        else:
+          r = None
       
-      if r.ok:
-        for ip, port in proxyScrape(r.content):
-          if not int(port) in self.badports:
-            proxies.add((ip, int(port)))
-      else:
-        self.urls.remove(url)
-        self.badUrls.append(url)
-    
+      if r:
+        if r.ok:
+          for ip, port in proxyScrape(r.content):
+            if not int(port) in self.badports:
+              proxies.add((ip, int(port)))
+        else:
+          self.urls.remove(url)
+          self.badUrls.append(url)
+      
+      
     if hasattr(self._driver, 'close'):
       self._driver.close()
       
@@ -143,8 +141,7 @@ class Skeleton:
 class Provider(Skeleton):
   def __init__(self, uuid=None, renewal=0, use=True, **kwargs):
     Skeleton.__init__(self, **kwargs)
-    #if not Settings.safe_run:
-    #  assert uuid and renewal
+    assert uuid and renewal
     self.uuid = uuid
     self.use = use
     self.renewal = renewal

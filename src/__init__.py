@@ -7,20 +7,19 @@
 from os import path
 import gzip
 import shutil
-import errno
-import struct
 import time
 import logging
-import socket
 import threading
-import Queue
+
 from sqlite3worker import Sqlite3Worker
 from datetime import datetime
 from cogs import MaxRetry
 from proxy import Proxy
+from utils import MiningQueue
+from communicate import Communicate_CLI
 import Settings
 import commands
-import providers
+import factory
 
 RUNNING = True
 
@@ -60,93 +59,27 @@ class Error(Exception):
   '''
 
 
-class InstanceRunning(Error):
-  '''
-  Called when it is believed when two programs might be trying to run.
-  '''
-  pass
-
-
-class User():
-  def __init__(self, s, con, timeout=30):
-    self.s = s
-    # print "client"
-    self.ip, self.port = con
-    self.s.settimeout(timeout)
-    self.msg = None
-  
-  def send_msg(self, msg):
-    # Prefix each message with a 4-byte length (network byte order)
-    msg = struct.pack('>I', len(msg)) + msg
-    self.s.sendall(msg)
-  
-  def recv_msg(self):
-    # Read message length and unpack it into an integer
-    raw_msglen = self.recvall(4)
-    if not raw_msglen:
-      return None
-    msglen = struct.unpack('>I', raw_msglen)[0]
-    # Read the message data
-    return self.recvall(msglen)
-  
-  def recvall(self, n):
-    # Helper function to recv n bytes or return None if EOF is hit
-    # print "recv"
-    data = ''
-    while len(data) < n:
-      packet = self.s.recv(n - len(data))
-      if not packet:
-        return None
-      data += packet
-    return data
-
-
-class Communicate_CLI(threading.Thread):
-  def __init__(self, parent):
+class Extra_miner(threading.Thread):
+  def __init__(self, parent, timeout=5):
     threading.Thread.__init__(self)
-    self.parent = parent
-    self.s = socket.socket()
-    try:
-      self.s.bind(Settings.local_conn)
-    except socket.error as serr:
-      if serr.errno == errno.EADDRINUSE:
-        raise InstanceRunning('It appears there is already an instance running on this machine.')
-      raise serr
-    
-    self.s.listen(Settings.socket_backlog)
-    self.running = False
     self.daemon = True
-    self.start()
+    self.parent = parent
+    self.timeout = timeout
   
   def run(self):
-    self.running = True
-    while self.running:
-      user = User(*self.s.accept())
-      l = user.recv_msg().split(':::')
-      cmd = l[0]
-      args = l[1:] or list()
-      
-      for i, x in enumerate(args):
-        if x.lower() == 'true':
-          args[i] = True
-        elif x.lower() == 'false':
-          args[i] = False
-        
-        elif x.isdigit():
-          args[i] = int(x)
-      
-      args = tuple(args)
-      
-      if not cmd.lower() == 'reload':
-        if hasattr(self.parent.commands, cmd):
-          resp = getattr(self.parent.commands, cmd)(*args)
-          if type(resp) in [str, unicode]:
-            resp = resp.encode('ascii', 'ignore')
-          else:
-            resp = str(resp)
-          user.send_msg(resp.strip())
-      user.s.close()
-
+    while self.parent.running:
+      if not self.parent._container.empty():
+        self.parent.current_task = 'mining'
+        proxy = Proxy(self.parent, *self.parent._container.get())
+        if not proxy.dead:
+          if time.time() - proxy.last_mined >= Settings.mine_wait_time:
+            proxy.mine(self.timeout)
+        else:
+          self.parent._db.remove(proxy.uuid)
+        self.parent._container.task_done()
+      else:
+        time.sleep(5)
+  
 
 class ProxyFrameDB(Sqlite3Worker):
   def __init__(self, fp, queue_size=Settings.max_sql_queue_size):
@@ -168,14 +101,15 @@ class ProxyFrameDB(Sqlite3Worker):
         ALIVE_CNT INTEGER,
         DEAD_CNT INTEGER,
         PROVIDER TEXT,
-        /*NOOBTERM TEXT,*/
+        ANONLVL TEXT,
+        SPEED TEXT,
         UNIQUE(IP, PORT) ON CONFLICT REPLACE
       )''')
       self.execute('''
       CREATE TABLE RENEWAL(
         UUID TEXT,
-        EPOCH TEXT,
-        DEAD_CNT INTEGER
+        EPOCH TEXT
+        /* DEAD_CNT INTEGER removed */
       );
       ''')
       
@@ -212,9 +146,9 @@ class ProxyFrameDB(Sqlite3Worker):
       dead += a
       alive += b
     
-    permadead, epoch = self.execute('SELECT DEAD_CNT, EPOCH FROM RENEWAL WHERE UUID = ?', (provider.uuid,))[0]
+    epoch = self.execute('SELECT EPOCH FROM RENEWAL WHERE UUID = ?', (provider.uuid,))[0][0]
     
-    return epoch, alive, dead, permadead
+    return epoch, alive, dead
   
   def modify(self, uuid, var, value):
     self.execute(
@@ -241,7 +175,7 @@ class ProxyFrame:
     # Extra stuff
     self.mine_cnt = 0
     self._start_time = time.time()
-    self.factory = providers.Factory(Settings.providers)
+    self.factory = factory.Factory(Settings.providers)
     self.last_scraped = self.find_last_scraped()
     
     self._tasks = [
@@ -273,7 +207,7 @@ class ProxyFrame:
     latest_epoch = 0
     provider = None
     for row in self._db.execute('SELECT * FROM RENEWAL'):
-      uuid, epoch, deadcnt = row
+      uuid, epoch = row
       if epoch > latest_epoch:
         latest_epoch = epoch
         provider = uuid
@@ -330,42 +264,39 @@ class ProxyFrame:
   
   def scrape(self, force=False):
     '''
-    Iterates through Settings.providers and keeps a database of time based
+    Iterates through * and keeps a database of time based
     on their last scrape
     :param force: boolean; Ignores time parameter
     :return: int amount of added entries
     '''
     logging.info('Preparing self_update...')
     ctr = 0
-    # print('preparing self update')
     for result in self.factory.providers:
       data = self._db.execute('SELECT * FROM RENEWAL WHERE UUID = ?', (result.uuid,))
-      # print data
       if data and data[0]:
-        _, epoch, _ = data[0]
+        _, epoch = data[0]
         epoch = float(epoch)
       else:
         logging.info('Adding [%s] to db' % result.uuid)
-        self._db.execute('INSERT INTO RENEWAL(UUID, EPOCH, DEAD_CNT) VALUES(?, ?, ?)', (result.uuid, 0, 0))
+        self._db.execute('INSERT INTO RENEWAL(UUID, EPOCH) VALUES(?, ?)', (result.uuid, 0))
         epoch = 0
       
       if force or time.time() >= epoch + result.renewal:
-        # print "scraping " + str(result.uuid)
         self.current_task = "scraping"
         if Settings.safe_run:
           try:
             result.scrape()
-          except:
+          except KeyboardInterrupt:
+            break
+          except Exception:
             logging.exception('Scraping %s failed.' % result.uuid)
-            if hasattr(result, 'use'):
-              result.use = False
-            else:  # It should, but in case of glitches and subclasses, we'll assert it will have it if it fails.
-              setattr(result, 'use', False)
+            result.use = False
         else:
           try:
             result.scrape()
           except MaxRetry:
             pass
+        
         if len(result.proxies) > 0:
           if result.use:
             ctr += len(result.proxies)
@@ -373,10 +304,9 @@ class ProxyFrame:
               self._db.add(ip, port, provider=result.uuid)
         else:
           logging.warn('Failed provider [{}] Dumping object into logs.\n{}\n'.format(result.uuid.upper(), vars(result)))
+        
         self._db.execute('UPDATE RENEWAL SET EPOCH = ? WHERE UUID = ?', (str(time.time()), result.uuid))
         self.last_scraped = (result.uuid, time.time())
-        # else:
-        #  print "passed "+result.uuid
     
     logging.info('Added %d to PXFrame.' % ctr)
     return ctr
@@ -384,15 +314,14 @@ class ProxyFrame:
   def do_tasks(self):
     # print "doing tasks"
     for x in self._tasks:
-      if Settings.safe_run:
-        try:
-          x()
-        except:
-          logging.exception('Failed to do task ' + str(x))
-      else:
+      try:
         x()
+      except:
+        logging.exception('Failed to do task ' + str(x.__name__))
   
-  def get(self, cnt=1, check_alive=True, online=True, timeout=10, protocol='nonspecific'):
+  def get(self, cnt=1, check_alive=True,
+          online=True, timeout=10, protocol='nonspecific',
+          order_by='RANDOM()'):
     '''
     receive proxies :D
     :param cnt: int; How many proxies would you like it to yield
@@ -410,7 +339,8 @@ class ProxyFrame:
         sql += ' WHERE ONLINE = 1'
         if not protocol == 'nonspecific':
           sql += ' AND WHERE PROTOCOL = ' + protocol.lower()
-      sql += ' ORDER BY RANDOM() LIMIT ' + str(cnt)
+      
+      sql += ' ORDER BY '+order_by+' LIMIT ' + str(cnt)
       
       data = self._db.execute(sql)
       for row in data:
@@ -458,8 +388,8 @@ class ProxyFrame:
       else:
         self._db.remove(proxy.uuid)
   
-  def fast_miner(self, find_method='ALIVE_CNT', order_method='ASC', include_online=True, timeout=5):
-    if self.threads == 0:
+  def start(self, find_method='ALIVE_CNT', order_method='ASC', include_online=True, timeout=5, threads=Settings.threads):
+    if 0 in [self.threads, threads]:
       while self.running:
         self.miner(0)
         self.do_tasks()
@@ -486,39 +416,3 @@ class ProxyFrame:
             # print self._container.unfinished_tasks
         self.do_tasks()
 
-
-class MiningQueue(Queue.Queue):
-  def _init(self, maxsize):
-    self.queue = set()
-  
-  def _put(self, item):
-    self.queue.add(item)
-  
-  def _get(self):
-    return self.queue.pop()
-  
-  def __contains__(self, item):
-    with self.mutex:
-      return item in self.queue
-
-
-class Extra_miner(threading.Thread):
-  def __init__(self, parent, timeout=5):
-    threading.Thread.__init__(self)
-    self.daemon = True
-    self.parent = parent
-    self.timeout = timeout
-  
-  def run(self):
-    while self.parent.running:
-      if not self.parent._container.empty():
-        proxy = Proxy(self.parent, *self.parent._container.get())
-        if not proxy.dead:
-          # if time.time() - proxy.last_mined >= Settings.mine_wait_time:
-          proxy.mine(self.timeout)
-        else:
-          self.parent._db.remove(proxy.uuid)
-        self.parent._container.task_done()
-      
-      else:
-        time.sleep(5)

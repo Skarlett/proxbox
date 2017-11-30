@@ -1,21 +1,66 @@
 import socket
 import time
 import Settings
+import requests
+import json
 from scanner import discover_protocol
 from utils import percentage
+from cogs import IPPattern
 
+# TODO: Make this horrible thing work dynamically
+def rank(proxy):
+  if proxy.protocol in ['socks5', 'socks4']:
+    return 'Elite'
+  else:
+    resp = requests.get(proxy.protocol+'://httpbin.org/get?show_env',
+                 proxies={
+                   proxy.protocol: proxy.protocol+'://'+proxy.ip+':'+proxy.port
+                 },
+                 headers={'User-Agent':'Test'})
+
+    try:
+      content = json.loads(resp.content)
+    except: return False
+    
+    ips = IPPattern.findall(resp.content)
+
+    user_agent = False
+    proxy_net = False
+    obsurce = False
+    transparent = False
+    
+    if not proxy.ip in ips and not content['origin'] == proxy.ip:
+      proxy_net = True
+    elif Settings.public_ip in ips:
+      return 'Transparent'
+    else:
+      obsurce = True
+    
+    
+    if content['User-Agent'] == 'Test':
+      user_agent = True
+    
+    if proxy_net:
+      return 'Elite'
+    elif user_agent or obsurce:
+      return 'Obscured'
+    elif transparent:
+      'Transparent'
+    
 
 class Proxy:
   def __init__(self, parent, uuid, ip, port, user,
                password, protocol, last_mined,
                last_mined_success, online,
-               dead, alive_cnt, dead_cnt, provider, ):
+               dead, alive_cnt, dead_cnt, provider, anonlvl, speed):
+    
     
     self.parent = parent
     self.uuid = int(uuid)
     self.ip = ip
     self.port = int(port)
     self.protocol = protocol
+    
     self.user = user
     self.password = password
     self.last_mined = float(last_mined) or float()
@@ -25,40 +70,63 @@ class Proxy:
     self.online = bool(int(online))
     self.last_mined_success = float(last_mined_success)
     self.provider = provider
-  
-  def mine(self, timeout=5):
-    self.parent.mine_cnt += 1
-    if not self.protocol:
-      protocol = discover_protocol(self.ip, self.port, timeout=timeout)
-      if protocol:
-        self.parent._db.modify(self.uuid, 'PROTOCOL', protocol)
-        self.checked(True)
-      else:
-        self.checked(False,)
+    
+    if not anonlvl:
+      load_anonlvl = True
+      self.anonlvl = 'Elite' if self.protocol and self.protocol.startswith('socks') else anonlvl
     else:
-      if self.is_alive(timeout=timeout):
+      load_anonlvl = False
+      self.anonlvl = anonlvl
+    self.speed = speed
+    
+    if load_anonlvl and self.anonlvl and self.anonlvl == 'Elite':
+      self.parent._db.modify(self.uuid, 'ANONLVL', 'Elite')
+  
+  #TODO Clean up
+  def mine(self, timeout=5):
+    self.parent.mine_cnt += 1 #TODO Seperate
+    
+    if not self.protocol:
+      self.protocol, self.speed = discover_protocol(self, timeout=timeout)
+      if self.protocol and self.speed:
+        self.parent._db.modify(self.uuid, 'PROTOCOL', self.protocol)
+        self.parent._db.modify(self.uuid, 'SPEED', str(self.speed))
         self.checked(True)
       else:
         self.checked(False)
+    else:
+      start = time.time()
+      alive = self.is_alive(timeout=timeout)
+      if alive:
+        self.speed = time.time()-start
+      self.checked(alive)
+    
+    self.parent._db.modify(self.uuid, 'SPEED', str(self.speed)) if self.speed else None
     self.parent._db.modify(self.uuid, 'LAST_MINED', str(time.time()))
     
+    if not self.anonlvl and self.protocol:
+      self.anonlvl = rank(self)
+      self.parent._db.modify(self.uuid, 'ANONLVL', self.anonlvl)
+      
     if Settings.remove_when_total <= self.alive_cnt + self.dead_cnt:
       if float(self.reliance()) <= Settings.remove_by_reliance:
         self.die()
   
   def die(self):
     self.parent._db.modify(self.uuid, 'REMOVE', 1)
-    self.parent._db.execute('UPDATE RENEWAL SET DEAD_CNT = DEAD_CNT + %d WHERE UUID = ?' % self.dead_cnt, (self.provider,))
     
-  def is_alive(self, timeout=30):
+    
+  def is_alive(self, timeout=Settings.global_timeout):
     s = socket.socket()
     s.settimeout(timeout)
+    reply = False
     try:
       s.connect((self.ip, self.port))
+      reply = True
     except:
-      return False
+      pass
     s.close()
-    return True
+    return reply
   
   def checked(self, result):
     '''
@@ -85,3 +153,4 @@ class Proxy:
       return percentage(self.alive_cnt, self.dead_cnt+self.alive_cnt)
     except ZeroDivisionError:
       return 0
+    

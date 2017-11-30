@@ -13,7 +13,7 @@ class LogicInterpreter:
   
   @staticmethod
   def range(x, y, **kwargs):
-    range(int(x), int(y), **kwargs)
+    return range(int(x), int(y), **kwargs)
   
   def __init__(self):
     self.passive_funcs = set()
@@ -57,12 +57,15 @@ class LogicInterpreter:
         except IndexError:
           raise NotImplemented('Function "{}" was not loaded into Active_funcs'.format(funcname))
         
-        
-        for special_arg, replacement in [("self", url), ("fragment", command)]:
-          if special_arg in args:
-            for i,x in enumerate(args):
-              if x == special_arg:
-                args[i] = replacement
+        # TODO: Document this
+        # self - changes the command variable to the url
+        # fragment - changes the command to a raw version of the command? Was I fucked up?
+        # for special_arg, replacement in [("self", url), ("fragment", command)]:
+        #   if special_arg in args:
+        #     for i,x in enumerate(args):
+        #       if x == special_arg:
+        #         args[i] = replacement
+        #
         
         if Settings.safe_run:
           try:
@@ -84,7 +87,7 @@ class LogicInterpreter:
             url = passive_func(url)
             logic_syntax.remove(command)
         else:
-          raise ProgrammingError('May not use subsitutes and passive funcs in the same argument')
+          raise SyntaxError('May not use subsitutes and passive funcs in the same argument')
 
     if len(iteratives) > 0:
       urls = []
