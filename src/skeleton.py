@@ -1,5 +1,5 @@
 from os.path import isfile
-from cogs import Provider, proxyScrape
+from crawlers import Provider, proxyScrape
 
 __author__ = "https://github.com/Skarlett"
 

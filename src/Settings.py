@@ -2,7 +2,6 @@
 # Default stuff
 ####
 from os import path
-from urllib import urlretrieve
 import logging
 import requests
 ##############################
@@ -14,17 +13,21 @@ import requests
 ###
 
 maindir = path.split(path.split(__file__)[0])[0]
+source_folder = path.split(__file__)[0]
 etc_folder = path.join(maindir, 'etc')
 bin_folder = path.join(etc_folder, 'bin')
-data_folder = path.join(etc_folder, 'data')
-backup_folder = path.join(data_folder, 'backups')
+backup_folder = path.join(etc_folder, 'backups')
+providers_folder = path.join(etc_folder, 'providers')
+
+
+# data_folder = path.join(etc_folder, 'data')
 # log_folder = path.join(etc_folder, 'logs')
+# ext_folder = path.join(etc_folder, 'ext')
 
 ##
 # Files
 ###
-database = path.join(data_folder, 'main.db')
-providers = path.join(data_folder, 'providers.json')
+database = path.join(etc_folder, 'proxies.sqlite3')
 log = path.join(maindir, 'main.log')
 
 
@@ -61,9 +64,12 @@ collect_protocol = [
 
 ##
 # Remove policies
+# Proxies...
 ###
 remove_by_reliance = .10
-remove_when_total = 25 # Greater than
+remove_when_total = 25  # Greater than
+remove_when_time_kept = (60 ** 2) * 24 * 2  # 2 days
+
 
 ##
 # Proxy mining

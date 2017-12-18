@@ -1,7 +1,8 @@
 import Queue
 
-def safe_eval(string):
-  return eval(string, {"__builtins__":None})
+def safe_eval(string, dirs={}):
+  dirs["__builtins__"] = dirs or None
+  return eval(string, dirs)
 
 def percentage(part, whole):
   try:
@@ -34,3 +35,7 @@ class MiningQueue(Queue.Queue):
   def __contains__(self, item):
     with self.mutex:
       return item in self.queue
+    
+def is_func(func):
+  def _blank(): pass
+  return type(func) == type(_blank)

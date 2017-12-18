@@ -1,20 +1,12 @@
 from time import gmtime, strftime
+from urllib import quote, quote_plus
 
 USE = True
 
 def dates(string):
     return strftime(string, gmtime())
 
-def lower(string):
-  return string.lower()
-
-def upper(string):
-  return string.upper()
-
-def capitalize(string):
-  return string.capitalize()
-
 def setup(interpreter):
   interpreter.passive_funcs.add(dates)
-  for x in [upper, capitalize, lower]:
+  for x in [quote, quote_plus]:
     interpreter.active_funcs.add(x)

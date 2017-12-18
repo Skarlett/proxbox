@@ -5,7 +5,7 @@ import requests
 import json
 from scanner import discover_protocol
 from utils import percentage
-from cogs import IPPattern
+from crawlers import IPPattern
 
 # TODO: Make this horrible thing work dynamically
 def rank(proxy):
@@ -36,7 +36,6 @@ def rank(proxy):
     else:
       obsurce = True
     
-    
     if content['User-Agent'] == 'Test':
       user_agent = True
     
@@ -52,7 +51,8 @@ class Proxy:
   def __init__(self, parent, uuid, ip, port, user,
                password, protocol, last_mined,
                last_mined_success, online,
-               dead, alive_cnt, dead_cnt, provider, anonlvl, speed):
+               dead, alive_cnt, dead_cnt, provider,
+               anonlvl, speed, first_added):
     
     
     self.parent = parent
@@ -70,7 +70,7 @@ class Proxy:
     self.online = bool(int(online))
     self.last_mined_success = float(last_mined_success)
     self.provider = provider
-    
+    self.first_added = first_added
     if not anonlvl:
       load_anonlvl = True
       self.anonlvl = 'Elite' if self.protocol and self.protocol.startswith('socks') else anonlvl
@@ -82,9 +82,8 @@ class Proxy:
     if load_anonlvl and self.anonlvl and self.anonlvl == 'Elite':
       self.parent._db.modify(self.uuid, 'ANONLVL', 'Elite')
   
-  #TODO Clean up
   def mine(self, timeout=5):
-    self.parent.mine_cnt += 1 #TODO Seperate
+    self.parent.mine_cnt += 1
     
     if not self.protocol:
       self.protocol, self.speed = discover_protocol(self, timeout=timeout)
@@ -107,12 +106,11 @@ class Proxy:
     if not self.anonlvl and self.protocol:
       self.anonlvl = rank(self)
       self.parent._db.modify(self.uuid, 'ANONLVL', self.anonlvl)
-      
-    if Settings.remove_when_total <= self.alive_cnt + self.dead_cnt:
-      if float(self.reliance()) <= Settings.remove_by_reliance:
-        self.die()
+    self.die()
   
-  def die(self):
+  def die(self, check_policy=True):
+    if check_policy and not self.check_policy():
+      return
     self.parent._db.modify(self.uuid, 'REMOVE', 1)
     
     
@@ -123,7 +121,7 @@ class Proxy:
     try:
       s.connect((self.ip, self.port))
       reply = True
-    except:
+    except Exception:
       pass
     s.close()
     return reply
@@ -153,4 +151,8 @@ class Proxy:
       return percentage(self.alive_cnt, self.dead_cnt+self.alive_cnt)
     except ZeroDivisionError:
       return 0
-    
+  
+  def check_policy(self):
+    return Settings.remove_when_total <= self.alive_cnt + self.dead_cnt and \
+    float(self.reliance()) <= float(Settings.remove_by_reliance) and \
+    time.time() >= float(self.first_added)+Settings.remove_when_time_kept

@@ -7,7 +7,6 @@ import socket
 from requests import get, exceptions
 from json import loads as jloads
 
-
 class InvalidData(Exception): pass
 class NeedsAuth(InvalidData): pass
 
@@ -27,30 +26,25 @@ def isSocks5Protocol(server, port, timeout=Settings.global_timeout):
   
   if data and len(data) > 1:
     unpacked = struct.unpack('BB', data)
-  #if unpacked == 5 and unpacked[1] == 255:
-  #  return False
- 
-    if unpacked[0] == 5 and unpacked[1] == 0:
-      return True
-  
+    return unpacked[0] == 5 and unpacked[1] == 0
   return False
+
+
 def isSocks4Protocol(ip, port, timeout=Settings.global_timeout):
   bip = socket.inet_aton(ip)
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   s.settimeout(timeout)
   s.connect((ip, port))
   s.send(struct.pack('>BBH', 4, 1, port) + bip + struct.pack('B', 0))
-  resp = s.recv(2)
-  
-  # print ''.join("\\x{:02x}".format(ord(c)) for c in resp)
-  if ord(resp[0]) == 0 or ord(resp[1]) == 90:
-    return True
-  
-  
+  resp = struct.unpack('BB', s.recv(2))
+  if len(resp) > 1:
+    return resp[0] == 0 and resp[1] == 90
+  return False
+
 def _http_wrapper(method, ip, port, timeout=Settings.global_timeout):
   try:
     pi = jloads(get(method+'://httpbin.org/get', proxies={
-      method: 'http://%s:%d' % (ip, port),
+      method: method+'://%s:%d' % (ip, port),
     }, timeout=timeout).content)
     
   except (exceptions.Timeout,
@@ -60,10 +54,8 @@ def _http_wrapper(method, ip, port, timeout=Settings.global_timeout):
           ) as e:
     return False
   
-  if not pi['origin'] == Settings.public_ip:
-    return False
-  return True
-
+  return not pi['origin'] == Settings.public_ip
+  
 
 supported_protocols = {
   'socks5': isSocks5Protocol,
@@ -79,18 +71,17 @@ def discover_protocol(proxy, timeout=Settings.global_timeout):
     for t, f in supported_protocols.items():
       if t in Settings.collect_protocol:
         start = time.time()
-
         try:
           if f(proxy.ip, proxy.port, timeout):
             return t, time.time()-start
+          
         except (Exception, socket.error) as e:
-          if not e in (errno.ETIMEDOUT, errno.ECONNABORTED, errno.ECONNREFUSED, errno.EHOSTUNREACH):
+          if not e.errno in (errno.ETIMEDOUT, errno.ECONNABORTED, errno.ECONNREFUSED, errno.EHOSTUNREACH):
             logging.exception('Exception raised in '+t+' '+e.__class__.__name__)
             error = True
-    
     if not Settings.keep_unregonized_protocols and not error:
       proxy.die()
   else:
-    proxy.die()
+    proxy.die(False)
   
   return None, None
