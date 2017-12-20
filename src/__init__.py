@@ -1,18 +1,19 @@
 ###
 # Our libs
 ##
-from exts import Extension             # tiny extension framework
-from crawlers import MaxRetry          # An exception
-from proxy import Proxy                # Proxy mold object that represents the the query results
-from utils import MiningQueue          # set queue
-from commands import Communicate_CLI   # threaded communication and command framework
-import Settings                        # config
-import factory                         # providers stuff
-
+from exts import Extension               # tiny extension framework
+from extended_providers import MaxRetry, IPPattern  # An exception
+from utils import MiningQueue            # set queue
+from commands import Communicate_CLI     # threaded communication and command framework
+from scanner import discover_protocol
+import Settings                          # config
+import providers_factory                 # providers stuff
+import utils
 ###
 # External libs
 ##
 from sqlite3worker import Sqlite3Worker # Threaded sqlite response
+import requests
 
 ###
 # builtins
@@ -22,6 +23,8 @@ import shutil
 import time
 import logging
 import threading
+import json
+import socket
 
 __version__ = Settings.version
 
@@ -63,7 +66,155 @@ class Extra_miner(threading.Thread):
         self.parent._container.task_done()
       else:
         time.sleep(5)
+
+
+class Proxy:
+  def __init__(self, parent, uuid, ip, port, user,
+               password, protocol, last_mined,
+               last_mined_success, online,
+               dead, alive_cnt, dead_cnt, provider,
+               anonlvl, speed, first_added):
+    
+    self.parent = parent
+    self.uuid = int(uuid)
+    self.ip = ip
+    self.port = int(port)
+    self.protocol = protocol
+    self.user = user
+    self.password = password
+    self.last_mined = float(last_mined) or float()
+    self.alive_cnt = alive_cnt or 0
+    self.dead_cnt = dead_cnt or 0
+    self.dead = bool(int(dead))
+    self.online = bool(int(online))
+    self.last_mined_success = float(last_mined_success)
+    self.provider = provider
+    self.first_added = first_added
+    
+    
+    if not anonlvl:
+      load_anonlvl = True
+      self.anonlvl = 'Elite' if self.protocol and self.protocol.startswith('socks') else anonlvl
+    else:
+      load_anonlvl = False
+      self.anonlvl = anonlvl
+    self.speed = speed
+    
+    if load_anonlvl and self.anonlvl and self.anonlvl == 'Elite':
+      self.parent._db.modify(self.uuid, 'ANONLVL', 'Elite')
   
+  def mine(self, timeout=5):
+    self.parent.mine_cnt += 1
+    
+    if not self.protocol:
+      self.protocol, self.speed = discover_protocol(self, timeout=timeout)
+      if self.protocol and self.speed:
+        self.parent._db.modify(self.uuid, 'PROTOCOL', self.protocol)
+        self.parent._db.modify(self.uuid, 'SPEED', str(self.speed))
+        self.checked(True)
+      else:
+        self.checked(False)
+    else:
+      start = time.time()
+      alive = self.is_alive(timeout=timeout)
+      if alive:
+        self.speed = time.time() - start
+      self.checked(alive)
+    
+    self.parent._db.modify(self.uuid, 'SPEED', str(self.speed)) if self.speed else None
+    self.parent._db.modify(self.uuid, 'LAST_MINED', str(time.time()))
+    
+    if not self.anonlvl and self.protocol:
+      self.anonlvl = self.rank()
+      self.parent._db.modify(self.uuid, 'ANONLVL', self.anonlvl)
+    self.die()
+  
+  def die(self, check_policy=True):
+    if check_policy and not self.check_policy():
+      return
+    self.parent._db.modify(self.uuid, 'REMOVE', 1)
+  
+  def rank(self):
+    if self.protocol in ['socks5', 'socks4']:
+      return 'Elite'
+    else:
+      resp = requests.get(self.protocol + '://httpbin.org/get?show_env',
+                          proxies={
+                            self.protocol: self.protocol + '://' + self.ip + ':' + self.port
+                          },
+                          headers={'User-Agent': 'Test'})
+      
+      try:
+        content = json.loads(resp.content)
+      except:
+        return False
+      
+      ips = IPPattern.findall(resp.content)
+      
+      user_agent = False
+      proxy_net = False
+      obsurce = False
+      transparent = False
+      
+      if not self.ip in ips and not content['origin'] == self.ip:
+        proxy_net = True
+      elif Settings.public_ip in ips:
+        return 'Transparent'
+      else:
+        obsurce = True
+      if content['User-Agent'] == 'Test':
+        user_agent = True
+      
+      if proxy_net:
+        return 'Elite'
+      elif user_agent or obsurce:
+        return 'Obscured'
+      elif transparent:
+        'Transparent'
+  
+  def is_alive(self, timeout=Settings.global_timeout):
+    s = socket.socket()
+    s.settimeout(timeout)
+    reply = False
+    try:
+      s.connect((self.ip, self.port))
+      reply = True
+    except Exception:
+      pass
+    s.close()
+    return reply
+  
+  def checked(self, result):
+    '''
+    Adds dead or alive count to db
+    :param result: bool
+    :return: none
+    '''
+    
+    if result:
+      method = 'ALIVE_CNT'
+      if not self.online:
+        self.parent._db.modify(self.uuid, 'ONLINE', 1)
+        self.online = True
+    else:
+      method = 'DEAD_CNT'
+      if self.online:
+        self.parent._db.modify(self.uuid, 'ONLINE', 0)
+        self.online = False
+    
+    self.parent._db.execute('UPDATE PROXY_LIST SET %s = %s + 1 WHERE UUID = ?' % (method, method), (self.uuid,))
+  
+  def reliance(self):
+    try:
+      return utils.percentage(self.alive_cnt, self.dead_cnt + self.alive_cnt)
+    except ZeroDivisionError:
+      return 0
+  
+  def check_policy(self):
+    return Settings.remove_when_total <= self.alive_cnt + self.dead_cnt and \
+           float(self.reliance()) <= float(Settings.remove_by_reliance) and \
+           time.time() >= float(self.first_added) + Settings.remove_when_time_kept
+
 
 class ProxyFrameDB(Sqlite3Worker):
   def __init__(self, fp, queue_size=Settings.max_sql_queue_size):
@@ -154,6 +305,10 @@ class ProxyFrameDB(Sqlite3Worker):
 
 
 class ProxyFrame:
+  Proxy = Proxy # Carried for extensions
+  Settings = Settings # Settings carried for other shit
+  Utils = utils
+  
   def __init__(self, proxyDbLoc, threads=Settings.threads):
     '''
     
@@ -168,7 +323,7 @@ class ProxyFrame:
     self.tasks = [ProxyFrame._scrape]
 
     # Stuff we made
-    self.factory = factory.Factory()
+    self.factory = providers_factory.Factory()
     self.communicate = Communicate_CLI(self)
     self.exts = Extension(self, 'tasks')
     
@@ -218,6 +373,7 @@ class ProxyFrame:
             result.scrape()
           except KeyboardInterrupt:
             break
+            
           except Exception:
             logging.exception('Scraping %s failed.' % result.uuid)
             result.use = False
@@ -261,7 +417,7 @@ class ProxyFrame:
     '''
     return time.time() - self._start_time
   
-  def totalProxies(self):
+  def total_proxies(self):
     '''
     :return: int; returns total number of proxies in database.
     '''
@@ -329,7 +485,7 @@ class ProxyFrame:
       data = self._db.execute(sql)
       for row in data:
         if row:
-          proxy = Proxy(self, *row)
+          proxy = self.Proxy(self, *row)
           if check_alive:
             if proxy.is_alive(timeout):
               proxy.checked(True)
@@ -362,7 +518,7 @@ class ProxyFrame:
       query += ' LIMIT %d' % chunk
     
     for row in self._db.execute(query):
-      proxy = Proxy(self, *row)
+      proxy = self.Proxy(self, *row)
       if not proxy.dead:
         if force or time.time() - proxy.last_mined >= Settings.mine_wait_time:
           self.current_task = "mining"

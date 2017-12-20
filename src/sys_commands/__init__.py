@@ -24,7 +24,7 @@ class Locator:
 
 
 class Command:
-  def __init__(self, f, aliases, param_map=None, self_name=True):
+  def __init__(self, f, aliases, param_map=list(), self_name=True):
     self.f = f
     if self_name:
       self.aliases = aliases+('--'+f.__name__,)
@@ -51,9 +51,9 @@ class Command:
       aliases = p[1:]
 
       if isinstance(value, bool) and aliases in args:
-        execute_values.append(not value)
+        execute_values.append(value)
       else:
-        if value.isdigit() and not isinstance(value, bool): value = int(value)
+        if str(value).isdigit() and not isinstance(value, bool): value = int(value)
         execute_values.append(value)
     return execute_values
   

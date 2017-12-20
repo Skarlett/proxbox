@@ -6,6 +6,7 @@ import struct
 import threading
 import Settings
 import errno
+import logging
 
 class InstanceRunning(Exception):
   '''
@@ -26,7 +27,9 @@ class CommandsManager:
     self.commands = temp
   
   def sys_exec(self, *args):
-    c = [c for c in self.commands if args[1] in c.aliases][0]
+    c = [c for c in self.commands if args[1] in c.aliases]
+    if c: c = c[0]
+    else: return None
     return c, c.construct_from_sys_args(args[1:])
     
 class User:
@@ -39,7 +42,7 @@ class User:
   
   def send(self, msg):
     '''i give you data'''
-    msg = struct.pack('>I', len(msg)) + msg
+    msg = struct.pack('>I', len(str(msg))) + str(msg)
     self.s.sendall(msg)
   
   def recv(self):
@@ -90,10 +93,17 @@ class Communicate_CLI(threading.Thread):
       package = user.recv()
       if package:
         values = self.command_mgr.sys_exec(*[x for x in package.split(' ') if x])
-        c, args = values
-        resp = c.execute(self.parent, *args)
-        if resp:
-          user.send(resp)
+        if values:
+          c, args = values
+          try:
+            resp = c.execute(self.parent, *args)
+            if resp:
+              user.send(resp)
+          except Exception:
+            user.send('Error in Command.')
+            logging.exception('Error raised on Command. {}, {} '.format(c, args))
+        else:
+          user.send('Not a command')
       else:
         user.send('Error.')
       user.s.close()

@@ -2,6 +2,7 @@ import re, Settings, logging
 from utils import safe_eval
 from exts import Extension
 
+
 class Exception(Exception): pass
 class NotImplemented(Exception): pass
 class ProgrammingError(Exception): pass

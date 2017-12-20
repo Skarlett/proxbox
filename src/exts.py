@@ -24,7 +24,7 @@ class Extension:
       
       if not '__init__.py' in files:
         with open(path.join(root, '__init__.py'), 'wb') as f:
-          f.write('')
+          f.write('pass')
       break
     
     for mod in modules:
@@ -34,11 +34,10 @@ class Extension:
           if hasattr(_mod, self.load_func):
             try:
               getattr(_mod, self.load_func)(self.parent)
-              self.loaded.add(_mod)
+              self.loaded.add((_mod, _mod.__name__, path.join(path.dirname(__file__), self.folder)))
             except Exception as e:
               logging.exception(mod + ' Has failed to load due to [' +e.__class__. __name__ +'] Being raised.')
           else:
             logging.warning(mod +' Has no setup function. Ignoring...')
       else:
         logging.warning(mod +' Has no USE flag, ignoring...')
-

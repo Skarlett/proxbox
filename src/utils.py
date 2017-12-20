@@ -4,6 +4,7 @@ def safe_eval(string, dirs={}):
   dirs["__builtins__"] = dirs or None
   return eval(string, dirs)
 
+
 def percentage(part, whole):
   try:
     return 100 * float(part) / float(whole)
@@ -17,10 +18,6 @@ def h_time(seconds):
     return "%d:%02d:%02d" % (h, m, s)
   else:
     return "+100 days"
-
-class Struct:
-  def __init__(self, **kwargs):
-    self.__dict__.update(**kwargs)
 
 class MiningQueue(Queue.Queue):
   def _init(self, maxsize):
