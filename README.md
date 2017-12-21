@@ -5,6 +5,7 @@ Current Version: 1.1.0
 
 ### Change list
   **-----1.1.0 or older -----**
+  
     + Added sqlite3worker (1.0.3)
     + Added multithreaded proxy scanning (1.0.4)
     + Added portable mods for adding custom website crawls (1.0.5)
