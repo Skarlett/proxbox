@@ -4,15 +4,15 @@ This tool is a daemon with (over sockets) CLI tools. used for collecting (Sqlite
 Current Version: 1.1.0
 
 ### Change list
-  -----1.1.0 or older -----
-  + Added sqlite3worker (1.0.3)
-  + Added multithreaded proxy scanning (1.0.4)
-  + Added portable mods for adding custom website crawls (1.0.5)
-  + Added logic expressions in `etc/data/provider.json` (1.0.5)
-  + Added portable moddable logical expressions (1.0.7)
-  + Added portable mods for sys_commands (1.1.0)
-  + Added portable mods for tasks (1.1.0)
-  +! Command outline change (1.1.0)
+  **-----1.1.0 or older -----**
+    + Added sqlite3worker (1.0.3)
+    + Added multithreaded proxy scanning (1.0.4)
+    + Added portable mods for adding custom website crawls (1.0.5)
+    + Added logic expressions in `etc/data/provider.json` (1.0.5)
+    + Added portable moddable logical expressions (1.0.7)
+    + Added portable mods for sys_commands (1.1.0)
+    + Added portable mods for tasks (1.1.0)
+    +! Command outline change (1.1.0)
   
 ### What it don't
   - It can't scan proxies with authenification enabled.
