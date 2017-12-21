@@ -23,7 +23,7 @@ def find_in_args(args, data):
 class CommandsManager:
   def __init__(self):
     # ProxyFrame
-    self.commands = list(Command(self.help, ('-h',)))
+    self.commands = [Command(CommandsManager.help, ('-h',))]
     self.exts = Extension(self, 'sys_commands')
     temp = []
     for c in self.commands:
@@ -50,8 +50,12 @@ class CommandsManager:
       else: data.append(v)
     return data
   
-  def help(self):
-      return '\n'.join('{}: {}'.format(x.f.__name__, x.f.__doc__) for x in self.commands)
+  @staticmethod
+  def help(parent):
+      '''
+      This displayed help message.
+      '''
+      return '\n'.join('['+' | '.join(x.aliases)+'] {}'.format(x.f.__doc__) for x in parent.communicate.command_mgr.commands)
   
   def sys_exec(self, *args):
     c = [c for c in self.commands if args[1] in c.aliases]

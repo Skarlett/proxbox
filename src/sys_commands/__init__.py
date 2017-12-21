@@ -34,32 +34,6 @@ class Command:
       else:
         raise NoAlias(str(f)+' was assigned with no command attached eg. "--flag"')
     self.param_map = param_map
-
-  def check(self, *args):
-    if len(args) == len(self.param_map):
-      for i, x in args:
-        if i != 0:
-          if not isinstance(x, self.param_map[i]) or self.param_map[i] != type(x):
-            return False
-      return True
-    return False
-  
-  def construct_from_sys_args(self, *args):
-    execute_values = []
-    for p in self.param_map:
-      value = p[0]
-      aliases = p[1:]
-
-      if isinstance(value, bool) and aliases in args:
-        execute_values.append(value)
-      else:
-        if str(value).isdigit() and not isinstance(value, bool):
-          value = int(value)
-        elif isinstance(value, bool):
-           value = not(value)
-        execute_values.append(value)
-    
-    return execute_values
   
   def execute(self, *args, **kwargs):
     return self.f(*args, **kwargs)

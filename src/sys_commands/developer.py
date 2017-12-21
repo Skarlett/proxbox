@@ -1,9 +1,10 @@
 from standard import online_cnt, uptime, total_cnt
 from __init__ import Command
 
-USE = True
+USE = False
 
 def test(_):
+  ''' Test for response'''
   print "did you hear that..?"
   return "Someone, Finally!" # Callback
 

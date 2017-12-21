@@ -5,12 +5,15 @@ USE = True
 
 
 def online_cnt(parent):
+  '''online count'''
   return parent.online()
 
 def total_cnt(parent):
+  '''total proxies in db'''
   return parent.total_proxies()
 
 def uptime(parent):
+  '''up time.'''
   return parent.Utils.h_time(parent.uptime())
 
 ##
@@ -18,6 +21,7 @@ def uptime(parent):
 ###
 
 def info(parent):
+  '''general application runtime stats'''
   try:
     msg = 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: [%s] [%s]\nStatus: [%s]\nProviders: %d' % \
           (parent.total_cnt(), parent.online_cnt(), parent.mine_cnt, parent.uptime(),
@@ -39,6 +43,7 @@ def info(parent):
   return msg.strip()
 
 def pinfo(parent, req):
+  '''info about proxy by uuid'''
   # get info about a specific proxy by uuid
   proxy = parent.Proxy(parent, *parent._db.execute('SELECT * FROM PROXY_LIST WHERE UUID = ?', (req,))[0])
   msg = 'UUID: ' + str(proxy.uuid) + '\n'
@@ -50,6 +55,7 @@ def pinfo(parent, req):
 def get(parent, cnt=1, bot=False, check_alive=True,
         online=True, timeout=10, give_geo_info=True,
         protocol='nonspecific'):
+  '''receives proxy(s) for you'''
   msg = ''
   if bot and give_geo_info:
     give_geo_info = False
@@ -76,6 +82,7 @@ def get(parent, cnt=1, bot=False, check_alive=True,
 
 
 def providers(parent):
+    '''stats for providers loaded.'''
     msg = ''
     for provider in parent.factory.providers:
       last_scrape, alive, dead = parent._db.provider_stats(provider)
@@ -90,6 +97,7 @@ def providers(parent):
     return msg.strip()
 
 def scrape(parent):
+  '''force parent to scrape'''
   return parent.scrape()
 
 def setup(parent):

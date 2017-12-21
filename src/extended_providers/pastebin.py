@@ -14,6 +14,7 @@ class Pastebin(Provider):
   def __init__(self):
     r = range(1, 1000)
     r.remove(80)
+    r.remove(443)
 
     Provider.__init__(self, uuid="Pastebin.com", renewal=4*60, use=USE, badports=r)
     self._scrape = self.scrape
@@ -49,8 +50,3 @@ class Pastebin(Provider):
 def setup(factory):
   factory.providers.add(Pastebin())
 
-
-def test():
-  paste = Pastebin()
-  paste.scrape()
-  return len(paste.proxies) > 0
