@@ -1,21 +1,9 @@
-from math import *
+import Queue
 
-#make a list of safe functions
-safe_list = ['acos', 'asin', 'atan',
-             'atan2', 'ceil', 'cos', 'cosh',
-             'degrees', 'e', 'exp', 'fabs',
-             'floor', 'fmod', 'frexp', 'hypot',
-             'ldexp', 'log', 'log10', 'modf',
-             'pi', 'pow', 'radians', 'sin',
-             'sinh', 'sqrt', 'tan', 'tanh']
+def safe_eval(string, dirs={}):
+  dirs["__builtins__"] = dirs or None
+  return eval(string, dirs)
 
-
-safe_dict = dict([(k, locals().get(k, None)) for k in safe_list ])
-safe_dict['abs'] = abs
-
-
-def safe_eval(string):
-  return eval(string, {"__builtins__":None}, safe_dict)
 
 def percentage(part, whole):
   try:
@@ -30,3 +18,21 @@ def h_time(seconds):
     return "%d:%02d:%02d" % (h, m, s)
   else:
     return "+100 days"
+
+class MiningQueue(Queue.Queue):
+  def _init(self, maxsize):
+    self.queue = set()
+  
+  def _put(self, item):
+    self.queue.add(item)
+  
+  def _get(self):
+    return self.queue.pop()
+  
+  def __contains__(self, item):
+    with self.mutex:
+      return item in self.queue
+    
+def is_func(func):
+  def _blank(): pass
+  return type(func) == type(_blank)

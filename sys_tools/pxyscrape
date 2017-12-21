@@ -1,5 +1,8 @@
+#!/bin/usr/python
 from os.path import isfile
-from cogs import Provider, proxyScrape
+import sys
+sys.path.append('../src')
+from extended_providers import Provider, proxyScrape
 
 __author__ = "https://github.com/Skarlett"
 

@@ -7,15 +7,15 @@
 
 __author__ = 'https://github.com/Skarlett'
 
-import sys
-sys.path.append('..')
 import re, requests
 import requests.exceptions as rexception
 import logging
 from cfscrape import create_scraper as CFscrape
 from selenium.webdriver import PhantomJS
-import Settings
 
+class Struct:
+  def __init__(self, **kwargs):
+    self.__dict__.update(**kwargs)
 
 drivers = {
   # driverName, Driver Object, Needs execution before use
@@ -24,13 +24,6 @@ drivers = {
   'requests': (requests, False)
 }
 HREF_FIND = re.compile(r'href=[\'"]?([^\'" >]+)')
-
-class Struct:
-  def __init__(self, **entries):
-    self.__dict__.update(entries)
-  
-  def update(self, **entries):
-    self.__dict__.update(entries)
 
 
 IPPattern = re.compile(
@@ -71,7 +64,6 @@ class Skeleton:
   '''
   Parent object for inheritence over other scrape proxy sources
   '''
-  # fake = False
   
   def __init__(self, **kwargs):
     self.urls = set()
@@ -105,31 +97,40 @@ class Skeleton:
       
       while self.retry_limit >= retries:
         try:
-          r = self._driver.get(url)
+          try:
+            r = self._driver.get(url)
+          except:
+            r = Struct(ok=False, content=None)
           if not hasattr(r, 'content'):
             r = Struct(ok=len(self._driver.page_source) > 0, content=self._driver.page_source, url=url)
           if r.ok:
             break
           else:
             retries += 1
-        except (rexception.Timeout, rexception.ConnectionError):
+        except Exception as err:
           retries += 1
-      
-      
+          if not err in [rexception.Timeout, rexception.ConnectionError, rexception.RetryError]:
+            logging.exception('Unhandled exception '+err.__class__.__name__)
+        except KeyboardInterrupt:
+          raise KeyboardInterrupt
+        
       if retries >= self.retry_limit:
-        # If this is called, r isn't declared, so it will run into an exception anyway.
         logging.error(url + ' Failed to render.')
         if not ignore_exceptions:
           raise MaxRetry('Max url retries')
+        else:
+          r = None
       
-      if r.ok:
-        for ip, port in proxyScrape(r.content):
-          if not int(port) in self.badports:
-            proxies.add((ip, int(port)))
-      else:
-        self.urls.remove(url)
-        self.badUrls.append(url)
-    
+      if r:
+        if r.ok:
+          for ip, port in proxyScrape(r.content):
+            if not int(port) in self.badports:
+              proxies.add((ip, int(port)))
+        else:
+          self.urls.remove(url)
+          self.badUrls.append(url)
+      
+      
     if hasattr(self._driver, 'close'):
       self._driver.close()
       
@@ -137,11 +138,12 @@ class Skeleton:
       self.proxies.add(x)
 
 class Provider(Skeleton):
-  def __init__(self, uuid=None, renewal=0, use=True, **kwargs):
+  def __init__(self, uuid=None, renewal=0, use=True, file=None, **kwargs):
     Skeleton.__init__(self, **kwargs)
-    #if not Settings.safe_run:
-    #  assert uuid and renewal
+    assert uuid and renewal
+    self.file = file
     self.uuid = uuid
     self.use = use
     self.renewal = renewal
-
+  
+  

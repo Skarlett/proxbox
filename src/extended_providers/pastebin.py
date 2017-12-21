@@ -1,17 +1,21 @@
-from __init__ import HREF_FIND, Provider, Settings
+from __init__ import HREF_FIND, Provider
 import requests
-
+import logging
 
 USE = False
+
+
+class Pastebin_Settings:
+  renewal = 4*60 # Every 4 Minutes
+  onDieRenewal = 60*60 # An hour
+
 
 class Pastebin(Provider):
   def __init__(self):
     r = range(1, 1000)
-    if 'http' in Settings.collect_protocol:
-      for i in [80, 81]:
-        r.remove(i)
-    
-    Provider.__init__(self, uuid="Pastebin.com", renewal=4*60, use=False, badports=r)
+    r.remove(80)
+
+    Provider.__init__(self, uuid="Pastebin.com", renewal=4*60, use=USE, badports=r)
     self._scrape = self.scrape
     
     def new_scrape():
@@ -19,7 +23,7 @@ class Pastebin(Provider):
       bad_url_filters = ['/tools', '/api', '/trends', '/privacy', '/cookies', '/dmca',
                          '/pro', '/faq', '/contact', '/scraping', 'http', '/archive',
                          '/login', '/messages', '/settings', '/alerts', '/signup',
-                         '/i/', '/favicon']
+                         '/i/', '/favicon', 'mail']
       for url in HREF_FIND.findall(html_body.content):
         live_or_die = True
         for badthing in bad_url_filters:
@@ -31,8 +35,13 @@ class Pastebin(Provider):
           if not url.startswith('http'):
             url = 'https://pastebin.com'+url
           self.urls.add(url)
-      
-      self._scrape()
+        
+      try:
+        self._scrape()
+      except Exception as e:
+        logging.exception('Couldn\'t scrape Pastebin')
+        self.renewal = Pastebin_Settings.onDieRenewal
+      self.renewal = Pastebin_Settings.renewal
       self.urls = set()
     
     self.scrape = new_scrape
@@ -40,7 +49,8 @@ class Pastebin(Provider):
 def setup(factory):
   factory.providers.add(Pastebin())
 
-#
-# paste = Pastebin()
-# paste.scrape()
-# print paste.proxies
+
+def test():
+  paste = Pastebin()
+  paste.scrape()
+  return len(paste.proxies) > 0
