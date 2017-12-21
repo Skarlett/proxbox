@@ -25,7 +25,7 @@ Current Version: 1.1.0
   + Its fine with huge amounts of shell calls on `px`
 
 ### Bugs
-  None Found.
+  + Possibility of it not scanning HTTP/HTTPS/SOCK4
   
 ### Known risks
   All risks appear to be interal threats if implemented correctly.
