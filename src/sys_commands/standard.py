@@ -4,12 +4,11 @@ import time
 USE = True
 
 
-
 def online_cnt(parent):
   return parent.online()
 
 def total_cnt(parent):
-  return parent.totalProxies()
+  return parent.total_proxies()
 
 def uptime(parent):
   return parent.Utils.h_time(parent.uptime())
@@ -96,11 +95,15 @@ def scrape(parent):
 def setup(parent):
   parent.commands.extend([
     Command(get, ('-g',),
-            param_map=((1, '-c', '--count'), (False, '-b', '--bot'),
-                      (False, '-nc', '--no-check'), (False, '-a', '--all'),
-                      (10, '-t'), (False, '--geo'),
-                      ('nonspecific', '-p', '--protocol'))
-            ),
+            param_map=(
+              (1, ('-c', '--count')),
+              (False, ('-b', '--bot')),
+              (False, ('-nc', '--no-check')),
+              (False, ('-o', '--online')),
+              (10, ('-t',)),
+              (False, ('--geo', '-g')),
+              ('nonspecific', ('-p', '--protocol'))
+            )),
     Command(info, ('-i',)),
     providers,
     scrape,

@@ -64,7 +64,6 @@ class Skeleton:
   '''
   Parent object for inheritence over other scrape proxy sources
   '''
-  # fake = False
   
   def __init__(self, **kwargs):
     self.urls = set()

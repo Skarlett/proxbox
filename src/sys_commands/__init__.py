@@ -53,8 +53,12 @@ class Command:
       if isinstance(value, bool) and aliases in args:
         execute_values.append(value)
       else:
-        if str(value).isdigit() and not isinstance(value, bool): value = int(value)
+        if str(value).isdigit() and not isinstance(value, bool):
+          value = int(value)
+        elif isinstance(value, bool):
+           value = not(value)
         execute_values.append(value)
+    
     return execute_values
   
   def execute(self, *args, **kwargs):

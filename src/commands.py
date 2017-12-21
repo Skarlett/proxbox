@@ -14,10 +14,16 @@ class InstanceRunning(Exception):
   '''
   pass
 
+def find_in_args(args, data):
+  for i, x in enumerate(args):
+    if x == data:
+       return i
+  return None
+
 class CommandsManager:
   def __init__(self):
     # ProxyFrame
-    self.commands = list()
+    self.commands = list(Command(self.help, ('-h',)))
     self.exts = Extension(self, 'sys_commands')
     temp = []
     for c in self.commands:
@@ -26,12 +32,37 @@ class CommandsManager:
       temp.append(c)
     self.commands = temp
   
+  def _pack(self, c, args):
+    data = []
+    for v, aliases in c.param_map:
+      location = [find_in_args(args, a) for a in aliases if a in args]
+      if location:
+          location = location[0]
+          print v, aliases
+          if type(v) == bool:
+            print not(v)
+            data.append(not(v))
+          elif isinstance(v, int):
+            data.append(int(args[location+1]))
+          elif isinstance(v, str):
+            data.append(args[location+1])
+          else: data.append(v)
+      else: data.append(v)
+    return data
+  
+  def help(self):
+      return '\n'.join('{}: {}'.format(x.f.__name__, x.f.__doc__) for x in self.commands)
+  
   def sys_exec(self, *args):
     c = [c for c in self.commands if args[1] in c.aliases]
     if c: c = c[0]
     else: return None
-    return c, c.construct_from_sys_args(args[1:])
+    return c, self._pack(c, args[2:] if len(args) > 1 else tuple())
     
+# fuck = Command(lambda: 'test', ('--superman', '-sm'), param_map=((False, ('-b', '--bot')), (False, ('-g', '--geo'))), self_name=False)
+# fuckery = CommandsManager()
+# print fuckery._pack(fuck, ('-g', '--geo', '-b', '--bot'))
+
 class User:
   def __init__(self, s, con, timeout=30):
     ''' super simple way of passing data basically way higher than you'd ever need'''

@@ -34,7 +34,7 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
       exit(1)
     except Exception:
-      print('Proxy miner not online')
+      print('ProxyMiner not online')
       exit(1)
     send_msg(s, ' '.join(argv))
     print(recv_msg(s))

@@ -10,7 +10,6 @@ def check_dirs():
       logging.info('made directory: '+str(d))
       mkdir(d)
 
-
 if __name__ == '__main__':
   check_dirs()
   pxf = ProxyFrame(Settings.database, Settings.threads)

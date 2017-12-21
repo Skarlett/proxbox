@@ -69,10 +69,8 @@ class Extra_miner(threading.Thread):
 
 
 class Proxy:
-  def __init__(self, parent, uuid, ip, port, user,
-               password, protocol, last_mined,
-               last_mined_success, online,
-               dead, alive_cnt, dead_cnt, provider,
+  def __init__(self, parent, uuid, ip, port, protocol, last_mined,
+               last_mined_success, online, dead, alive_cnt, dead_cnt, provider,
                anonlvl, speed, first_added):
     
     self.parent = parent
@@ -80,8 +78,6 @@ class Proxy:
     self.ip = ip
     self.port = int(port)
     self.protocol = protocol
-    self.user = user
-    self.password = password
     self.last_mined = float(last_mined) or float()
     self.alive_cnt = alive_cnt or 0
     self.dead_cnt = dead_cnt or 0
@@ -226,8 +222,6 @@ class ProxyFrameDB(Sqlite3Worker):
         UUID INTEGER PRIMARY KEY,
         IP TEXT,
         PORT INTEGER,
-        USER TEXT,
-        PASSWORD TEXT,
         PROTOCOL TEXT,
         LAST_MINED TEXT,
         LAST_MINED_SUCCESS TEXT,
@@ -257,18 +251,18 @@ class ProxyFrameDB(Sqlite3Worker):
     r = self.execute('SELECT Count(*) FROM PROXY_LIST')
     return int(r[0][0])
   
-  def add(self, ip, port, protocol=None, user=None, pw=None, alive_cnt=0, dead_cnt=0,
+  def add(self, ip, port, protocol=None, alive_cnt=0, dead_cnt=0,
           online=False, provider=None):
     if ip and port:
       self.execute(
         '''INSERT INTO PROXY_LIST(
-          IP, PORT, USER, PASSWORD, PROTOCOL,
+          IP, PORT, PROTOCOL,
           LAST_MINED, LAST_MINED_SUCCESS,
           REMOVE, ONLINE, ALIVE_CNT, DEAD_CNT, PROVIDER, FIRST_ADDED)
-          VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+          VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         ''',
         (
-          ip, int(port), user, pw, protocol, 0, 0, 0,
+          ip, int(port), protocol, 0, 0, 0,
           int(online), alive_cnt, dead_cnt, provider, time.time()
         )
       )
