@@ -1,9 +1,11 @@
 # px
 This tool is a daemon with (over sockets) CLI tools. used for collecting (Sqlite3), storing and checking proxy servers.
 
-Current Version: 1.1.0
+Current Version: 1.1.1
 
 ### Change list
+  + Fix Bug: Possibility of it not scanning HTTP/HTTPS/SOCK4 (1.1.1)
+  
   **-----1.1.0 or older -----**
   
     + Added sqlite3worker (1.0.3)
@@ -14,6 +16,7 @@ Current Version: 1.1.0
     + Added portable mods for sys_commands (1.1.0)
     + Added portable mods for tasks (1.1.0)
     +! Command outline change (1.1.0)
+    
   
 ### What it don't
   - It can't scan proxies with authenification enabled.
@@ -25,7 +28,7 @@ Current Version: 1.1.0
   + Its fine with huge amounts of shell calls on `px`
 
 ### Bugs
-  + Possibility of it not scanning HTTP/HTTPS/SOCK4
+  None
   
 ### Known risks
   All risks appear to be interal threats if implemented correctly.
