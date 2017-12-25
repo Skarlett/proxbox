@@ -35,8 +35,8 @@ def info(parent):
   
   msg += '\n'
   for x in parent.Settings.collect_protocol:
-    msg += '{}:{}\n'.format(x, parent._db.execute('SELECT COUNT(*) FROM PROXY_LIST WHERE PROTOCOL = ?',
-                                                       (x.lower(),))[0][0] or 0)
+    resp = int(parent._db.execute('SELECT COUNT(*) FROM PROXY_LIST WHERE PROTOCOL = ?', (x.lower(),))[0][0])
+    msg += '{}:{}\n'.format(x, resp or 0)
   
   msg += '\nThreads: ' + str(len(parent._miners) + 3)
   

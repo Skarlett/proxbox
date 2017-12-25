@@ -57,9 +57,9 @@ keep_unregonized_protocols = False
 ###
 collect_protocol = [
   'socks5',
-  'socks4'
-  'https'
-  'http'
+  'socks4',
+  'https',
+  'http',
 ]
 
 ##

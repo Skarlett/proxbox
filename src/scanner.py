@@ -74,13 +74,16 @@ def discover_protocol(proxy, timeout=Settings.global_timeout):
         try:
           if f(proxy.ip, proxy.port, timeout):
             return t, time.time()-start
-          
+        
+        except socket.timeout:
+          pass
         except (Exception, socket.error) as e:
           if not e.errno in (errno.ETIMEDOUT, errno.ECONNABORTED, errno.ECONNREFUSED, errno.EHOSTUNREACH):
             logging.exception('Exception raised in '+t+' '+e.__class__.__name__)
-            error = True
-    if not Settings.keep_unregonized_protocols and not error:
-      proxy.die()
+             # error = True
+    
+    # if not Settings.keep_unregonized_protocols and not error:
+    #   proxy.die()
   else:
     proxy.die(False)
   
