@@ -26,7 +26,7 @@ class CommandsManager:
     
     self.commands = [
       Command(CommandsManager.help, ('-h',)),
-      Command(CommandsManager._reload, ('--reload'), self_name=False)
+      Command(CommandsManager._reload, ('--reload',), self_name=False)
     ]
     self.exts = Extension(self, 'sys_commands')
     self.after_load()

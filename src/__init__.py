@@ -135,11 +135,14 @@ class Proxy:
     if self.protocol in ['socks5', 'socks4']:
       return 'Elite'
     else:
-      resp = requests.get(self.protocol + '://httpbin.org/get?show_env',
+      try:
+        resp = requests.get(self.protocol + '://httpbin.org/get?show_env',
                           proxies={
                             self.protocol: self.protocol + '://' + self.ip + ':' + str(self.port)
                           },
                           headers={'User-Agent': 'Test'})
+      except:
+        return False
       
       try:
         content = json.loads(resp.content)
