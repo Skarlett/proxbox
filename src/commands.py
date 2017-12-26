@@ -4,7 +4,7 @@ from utils import is_func
 import socket
 import struct
 import threading
-import Settings
+import settings
 import errno
 import logging
 
@@ -23,8 +23,21 @@ def find_in_args(args, data):
 class CommandsManager:
   def __init__(self):
     # ProxyFrame
-    self.commands = [Command(CommandsManager.help, ('-h',))]
+    
+    self.commands = [
+      Command(CommandsManager.help, ('-h',)),
+      Command(CommandsManager._reload, ('--reload'), self_name=False)
+    ]
     self.exts = Extension(self, 'sys_commands')
+    self.after_load()
+  
+  @staticmethod
+  def _reload(parent):
+    ''' reload extensions '''
+    parent.reload()
+    return 'Reloaded.'
+  
+  def after_load(self):
     temp = []
     for c in self.commands:
       if is_func(c):
@@ -32,30 +45,32 @@ class CommandsManager:
       temp.append(c)
     self.commands = temp
   
+    
   def _pack(self, c, args):
-    data = []
-    for v, aliases in c.param_map:
-      location = [find_in_args(args, a) for a in aliases if a in args]
-      if location:
-          location = location[0]
-          print v, aliases
-          if type(v) == bool:
-            print not(v)
-            data.append(not(v))
-          elif isinstance(v, int):
-            data.append(int(args[location+1]))
-          elif isinstance(v, str):
-            data.append(args[location+1])
-          else: data.append(v)
-      else: data.append(v)
+    if c.param_map:
+      data = []
+      for v, aliases in c.param_map:
+        location = [find_in_args(args, a) for a in aliases if a in args]
+        if location:
+            location = location[0]
+            # print v, aliases
+            if type(v) == bool:
+              # print not(v)
+              data.append(not(v))
+            elif isinstance(v, int):
+              data.append(int(args[location+1]))
+            elif isinstance(v, str):
+              data.append(args[location+1])
+            else: data.append(v)
+        else: data.append(v)
+    else: data = args
     return data
   
   @staticmethod
   def help(parent):
-      '''
-      This displayed help message.
-      '''
-      return '\n'.join('['+' | '.join(x.aliases)+'] {}'.format(x.f.__doc__) for x in parent.communicate.command_mgr.commands)
+      '''This displayed help message.'''
+      return '\n'.join('['+' | '.join(x.aliases)+'] {}'.format(x.f.__doc__)
+                       for x in parent.communicate.command_mgr.commands if x.help_menu)
   
   def sys_exec(self, *args):
     c = [c for c in self.commands if args[1] in c.aliases]
@@ -110,13 +125,13 @@ class Communicate_CLI(threading.Thread):
     self.command_mgr = CommandsManager()
     self.s = socket.socket()
     try:
-      self.s.bind(Settings.local_conn)
+      self.s.bind(settings.local_conn)
     except socket.error as serr:
       if serr.errno == errno.EADDRINUSE:
-        raise InstanceRunning('It appears there is already an instance running on this port. [{}]'.format(Settings.local_conn[1]))
+        raise InstanceRunning('It appears there is already an instance running on this port. [{}]'.format(settings.local_conn[1]))
       raise serr
     
-    self.s.listen(Settings.socket_backlog)
+    self.s.listen(settings.socket_backlog)
     self.running = False
     self.daemon = True
     self.start()

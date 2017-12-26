@@ -1,4 +1,4 @@
-import Settings
+import settings
 import logging
 import time
 import errno
@@ -11,7 +11,7 @@ class InvalidData(Exception): pass
 class NeedsAuth(InvalidData): pass
 
 
-def isSocks5Protocol(server, port, timeout=Settings.global_timeout):
+def isSocks5Protocol(server, port, timeout=settings.global_timeout):
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   s.settimeout(timeout)
   data = None
@@ -30,18 +30,24 @@ def isSocks5Protocol(server, port, timeout=Settings.global_timeout):
   return False
 
 
-def isSocks4Protocol(ip, port, timeout=Settings.global_timeout):
+def isSocks4Protocol(ip, port, timeout=settings.global_timeout):
   bip = socket.inet_aton(ip)
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   s.settimeout(timeout)
   s.connect((ip, port))
   s.send(struct.pack('>BBH', 4, 1, port) + bip + struct.pack('B', 0))
-  resp = struct.unpack('BB', s.recv(2))
-  if len(resp) > 1:
-    return resp[0] == 0 and resp[1] == 90
+  try:
+    _d = s.recv(2)
+  except:
+    return False
+  
+  if _d:
+    resp = struct.unpack('BB', _d)
+    if len(resp) > 1:
+      return resp[0] == 0 and resp[1] == 90
   return False
 
-def _http_wrapper(method, ip, port, timeout=Settings.global_timeout):
+def _http_wrapper(method, ip, port, timeout=settings.global_timeout):
   try:
     pi = jloads(get(method+'://httpbin.org/get', proxies={
       method: method+'://%s:%d' % (ip, port),
@@ -54,7 +60,7 @@ def _http_wrapper(method, ip, port, timeout=Settings.global_timeout):
           ) as e:
     return False
   
-  return not pi['origin'] == Settings.public_ip
+  return not pi['origin'] == settings.public_ip
   
 
 supported_protocols = {
@@ -65,11 +71,10 @@ supported_protocols = {
   
 }
 
-def discover_protocol(proxy, timeout=Settings.global_timeout):
+def discover_protocol(proxy, timeout=settings.global_timeout):
   if proxy.port > 0 and proxy.port <= 65535:  # Port check
-    error = False
     for t, f in supported_protocols.items():
-      if t in Settings.collect_protocol:
+      if t in settings.collect_protocol:
         start = time.time()
         try:
           if f(proxy.ip, proxy.port, timeout):
@@ -78,9 +83,12 @@ def discover_protocol(proxy, timeout=Settings.global_timeout):
         except socket.timeout:
           pass
         except (Exception, socket.error) as e:
-          if not e.errno in (errno.ETIMEDOUT, errno.ECONNABORTED, errno.ECONNREFUSED, errno.EHOSTUNREACH):
-            logging.exception('Exception raised in '+t+' '+e.__class__.__name__)
-             # error = True
+          if hasattr(e, 'errno'):
+            if not e.errno in (errno.ETIMEDOUT, errno.ECONNABORTED, errno.ECONNREFUSED, errno.EHOSTUNREACH):
+              logging.exception('Exception raised in '+t+' '+e.__class__.__name__)
+          else:
+            logging.exception('Exception raised in ' + t + ' ' + e.__class__.__name__)
+  
     
     # if not Settings.keep_unregonized_protocols and not error:
     #   proxy.die()

@@ -2,7 +2,7 @@
 from socket import socket
 from sys import argv
 import struct
-import Settings
+import settings
 
 
 def send_msg(sock, msg):
@@ -30,7 +30,7 @@ if __name__ == '__main__':
   if len(argv) > 1:
     s = socket()
     try:
-      s.connect(Settings.local_conn)
+      s.connect(settings.local_conn)
     except KeyboardInterrupt:
       exit(1)
     except Exception:
