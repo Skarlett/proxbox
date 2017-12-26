@@ -27,7 +27,7 @@ class LogicInterpreter:
     logic_syntax = set(self.__logic_interpreter.findall(url.replace(' ', '')))
     
     for command in list(logic_syntax):
-      cntue = True
+      #cntue = True
       if not '%' in command:
         # TODO: Cleanup
         funcname = command.split('(')[0]
@@ -36,11 +36,11 @@ class LogicInterpreter:
         try:
           func = [x for x in self.active_funcs if x.__name__ == funcname ][0]
         except IndexError:
-          try:
+          #try:
             raise NotImplemented('Function "{}" was not loaded into Active_funcs'.format(funcname))
-          except NotImplemented as e:
-            logging.warning('Function ({}) ignored'.format(funcname))
-            cntue = False
+          #except NotImplemented as e:
+          #  logging.warning('Function ({}) ignored'.format(funcname))
+        #    cntue = False
         # TODO: Document this
         # self - changes the command variable to the url
         # fragment - changes the command to a raw version of the command? Was I fucked up?
@@ -51,22 +51,21 @@ class LogicInterpreter:
         #         args[i] = replacement
         #
         
-        if cntue:
+       # if cntue:
           
-          try:
-            resp = func(*args)
-          except:
-            logging.exception(funcname+' Has failed to generate')
+        
+        resp = func(*args)
+        
           
-          if hasattr(resp, '__iter__'):
+        if hasattr(resp, '__iter__'):
               iteratives.append(resp)
-          else:
+        else:
               url = url.replace('{'+command+'}', str(resp))
               logic_syntax.remove(command)
-        else:
-          pass
+        #else:
+        #  pass
       else:
-        if cntue:
+          # if cntue:
           if not '(' in command or not ')' in command:
             for passive_func in self.passive_funcs:
               url = passive_func(url)

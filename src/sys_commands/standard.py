@@ -42,8 +42,8 @@ def info(parent):
     msg += '{}:{}\n'.format(x, resp or 0)
   
   msg += '\nThreads: ' + str(len(parent._miners) + 3)
-  msg += '\n'
-  msg += ''.join('[= {} =]\n'.format(x._miners) for x in parent._miners)
+  msg += '\nMiner Queues:\n\t'
+  msg += '\n\t'.join('[= {} =]'.format(x.status) for x in parent._miners)
   return msg.strip()
 
 def pinfo(parent, req):

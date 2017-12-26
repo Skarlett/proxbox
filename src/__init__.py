@@ -54,6 +54,7 @@ class Extra_miner(threading.Thread):
     self.parent = parent
     self.timeout = timeout
     self.status= 'init'
+  
   def run(self):
     while self.parent.running:
       if not self.parent._container.empty():
@@ -68,7 +69,7 @@ class Extra_miner(threading.Thread):
         self.parent._container.task_done()
   
       else:
-        self,status = 'chilling'
+        self.status = 'chilling'
         time.sleep(5)
       
 
