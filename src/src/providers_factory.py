@@ -4,7 +4,7 @@ from logic_interpreter import LogicInterpreter
 from exts import Extension
 import json
 import logging
-import Settings
+import settings
 
 class Error(Exception): pass
 class ProviderExists(Error): pass
@@ -12,7 +12,7 @@ class BadFormatProvider(Error): pass
 
 
 class Factory():
-  directory = Settings.providers_folder
+  directory = settings.providers_folder
   
   def __init__(self):
     self.logic_interpreter = LogicInterpreter()
@@ -23,7 +23,7 @@ class Factory():
   
   
   def _load(self):
-    for root, _, files in walk(Settings.providers_folder):
+    for root, _, files in walk(settings.providers_folder):
       for _file in files:
         with open(path.join(root, _file)) as f:
           jsonfile = json.load(f)
@@ -37,7 +37,7 @@ class Factory():
         if data['use']:
           urls = set()
           for proto in data['types']:
-            if proto.lower() in Settings.collect_protocol+['nonspecific']:
+            if proto.lower() in settings.collect_protocol+['nonspecific']:
               for url in data['types'][proto]:
                 for nurl in self.logic_interpreter.generate(url):
                   urls.add(nurl)

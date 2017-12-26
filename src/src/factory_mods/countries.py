@@ -10,7 +10,7 @@ USE = True
 def _c(catagory):
   with open(data_file) as f:
     return json.load(f)[catagory]
-print data_file
+
 def country_full(): return _c('full')
 def country_abrv(): return _c('abbr')
 

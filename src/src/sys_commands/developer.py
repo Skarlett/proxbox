@@ -1,7 +1,7 @@
 from standard import online_cnt, uptime, total_cnt
 from __init__ import Command
 
-USE = False
+USE = True
 
 #def sql(parent, *args):
 #  return parent._db.execute(' '.join(args))

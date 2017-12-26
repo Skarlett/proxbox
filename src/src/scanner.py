@@ -1,4 +1,4 @@
-import Settings
+import settings
 import logging
 import time
 import errno
@@ -11,7 +11,7 @@ class InvalidData(Exception): pass
 class NeedsAuth(InvalidData): pass
 
 
-def isSocks5Protocol(server, port, timeout=Settings.global_timeout):
+def isSocks5Protocol(server, port, timeout=settings.global_timeout):
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   s.settimeout(timeout)
   data = None
@@ -30,7 +30,7 @@ def isSocks5Protocol(server, port, timeout=Settings.global_timeout):
   return False
 
 
-def isSocks4Protocol(ip, port, timeout=Settings.global_timeout):
+def isSocks4Protocol(ip, port, timeout=settings.global_timeout):
   bip = socket.inet_aton(ip)
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   s.settimeout(timeout)
@@ -47,7 +47,7 @@ def isSocks4Protocol(ip, port, timeout=Settings.global_timeout):
       return resp[0] == 0 and resp[1] == 90
   return False
 
-def _http_wrapper(method, ip, port, timeout=Settings.global_timeout):
+def _http_wrapper(method, ip, port, timeout=settings.global_timeout):
   try:
     pi = jloads(get(method+'://httpbin.org/get', proxies={
       method: method+'://%s:%d' % (ip, port),
@@ -60,7 +60,7 @@ def _http_wrapper(method, ip, port, timeout=Settings.global_timeout):
           ) as e:
     return False
   
-  return not pi['origin'] == Settings.public_ip
+  return not pi['origin'] == settings.public_ip
   
 
 supported_protocols = {
@@ -71,10 +71,10 @@ supported_protocols = {
   
 }
 
-def discover_protocol(proxy, timeout=Settings.global_timeout):
+def discover_protocol(proxy, timeout=settings.global_timeout):
   if proxy.port > 0 and proxy.port <= 65535:  # Port check
     for t, f in supported_protocols.items():
-      if t in Settings.collect_protocol:
+      if t in settings.collect_protocol:
         start = time.time()
         try:
           if f(proxy.ip, proxy.port, timeout):

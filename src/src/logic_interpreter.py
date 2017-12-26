@@ -1,4 +1,4 @@
-import re, Settings, logging
+import re, settings, logging
 from exts import Extension
 from utils import safe_eval
 
@@ -48,7 +48,7 @@ class LogicInterpreter:
         #         args[i] = replacement
         #
         
-        if Settings.safe_run:
+        if settings.safe_run:
           try:
             resp = func(*args)
           except:

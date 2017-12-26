@@ -7,7 +7,7 @@ from utils import MiningQueue            # set queue
 from commands import Communicate_CLI     # threaded communication and command framework
 from scanner import discover_protocol
 from commands import CommandsManager, Command
-import Settings                          # config
+import settings                          # config
 import providers_factory                 # providers stuff
 import utils
 ###
@@ -27,7 +27,7 @@ import threading
 import json
 import socket
 
-__version__ = Settings.version
+__version__ = settings.version
 
 
 ###
@@ -60,7 +60,7 @@ class Extra_miner(threading.Thread):
         self.parent.current_task = 'mining'
         proxy = Proxy(self.parent, *self.parent._container.get())
         if not proxy.dead:
-          if time.time() - proxy.last_mined >= Settings.mine_wait_time:
+          if time.time() - proxy.last_mined >= settings.mine_wait_time:
             proxy.mine(self.timeout)
         else:
           self.parent._db.remove(proxy.uuid)
@@ -155,7 +155,7 @@ class Proxy:
       
       if not self.ip in ips and not content['origin'] == self.ip:
         proxy_net = True
-      elif Settings.public_ip in ips:
+      elif settings.public_ip in ips:
         return 'Transparent'
       else:
         obsurce = True
@@ -171,7 +171,7 @@ class Proxy:
       elif transparent:
         'Transparent'
   
-  def is_alive(self, timeout=Settings.global_timeout):
+  def is_alive(self, timeout=settings.global_timeout):
     s = socket.socket()
     s.settimeout(timeout)
     reply = False
@@ -210,13 +210,13 @@ class Proxy:
       return 0
   
   def check_policy(self, force=False):
-    return force or Settings.remove_when_total <= self.alive_cnt + self.dead_cnt and \
-           float(self.reliance()) <= float(Settings.remove_by_reliance) and \
-           time.time() >= float(self.first_added) + Settings.remove_when_time_kept
+    return force or settings.remove_when_total <= self.alive_cnt + self.dead_cnt and \
+           float(self.reliance()) <= float(settings.remove_by_reliance) and \
+           time.time() >= float(self.first_added) + settings.remove_when_time_kept
 
 
 class ProxyFrameDB(Sqlite3Worker):
-  def __init__(self, fp, queue_size=Settings.max_sql_queue_size):
+  def __init__(self, fp, queue_size=settings.max_sql_queue_size):
     self.fp = fp
     Sqlite3Worker.__init__(self, fp, max_queue_size=queue_size)
     r = self.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='PROXY_LIST';")
@@ -303,7 +303,7 @@ class ProxyFrameDB(Sqlite3Worker):
 
 class ProxyFrame:
   Proxy = Proxy # Carried for extensions
-  Settings = Settings # Settings carried for other shit
+  Settings = settings # Settings carried for other shit
   Utils = utils
   
   def __init__(self, proxyDbLoc, threads=Settings.threads):
@@ -370,7 +370,8 @@ class ProxyFrame:
     
     self.communicate.command_mgr.commands = [
       Command(CommandsManager.help, ('-h',)),
-      Command(CommandsManager._reload, ())
+      Command(CommandsManager._reload, ('--reload',), self_name=False)
+
     ]
     
     self.communicate.command_mgr.exts.reload_setup_hooks()
@@ -417,7 +418,7 @@ class ProxyFrame:
     
       if force or time.time() >= epoch + result.renewal:
         pxf.current_task = "scraping"
-        if Settings.safe_run:
+        if settings.safe_run:
           try:
             result.scrape()
           except KeyboardInterrupt:
@@ -549,7 +550,7 @@ class ProxyFrame:
     :param find_method: ALIVE_CNT or DEAD_CNT
     :return:
     '''
-    query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), Settings.mine_wait_time)
+    query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), settings.mine_wait_time)
     
     if not include_online:
       query += ' AND WHERE ONLINE = 0'
@@ -562,7 +563,7 @@ class ProxyFrame:
     for row in self._db.execute(query):
       proxy = self.Proxy(self, *row)
       if not proxy.dead:
-        if force or time.time() - proxy.last_mined >= Settings.mine_wait_time:
+        if force or time.time() - proxy.last_mined >= settings.mine_wait_time:
           self.current_task = "mining"
           proxy.mine(timeout)
         else:
@@ -577,13 +578,13 @@ class ProxyFrame:
         self.do_tasks()
     else:
       self._container = MiningQueue(1000000)
-      self._miners = [Extra_miner(self, timeout) for _ in xrange(Settings.threads)]
+      self._miners = [Extra_miner(self, timeout) for _ in xrange(settings.threads)]
       for b in self._miners:
         b.start()
       
       while self.running:
         if self._container.empty():
-          query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), Settings.mine_wait_time)
+          query = 'SELECT * FROM PROXY_LIST WHERE %d-LAST_MINED > %d' % (int(time.time()), settings.mine_wait_time)
           if not include_online:
             query += ' AND WHERE ONLINE = 0'
           

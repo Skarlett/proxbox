@@ -4,7 +4,7 @@ from utils import is_func
 import socket
 import struct
 import threading
-import Settings
+import settings
 import errno
 import logging
 
@@ -26,7 +26,7 @@ class CommandsManager:
     
     self.commands = [
       Command(CommandsManager.help, ('-h',)),
-      Command(CommandsManager._reload, ())
+      Command(CommandsManager._reload, ('--reload'), self_name=False)
     ]
     self.exts = Extension(self, 'sys_commands')
     self.after_load()
@@ -53,9 +53,9 @@ class CommandsManager:
         location = [find_in_args(args, a) for a in aliases if a in args]
         if location:
             location = location[0]
-            print v, aliases
+            # print v, aliases
             if type(v) == bool:
-              print not(v)
+              # print not(v)
               data.append(not(v))
             elif isinstance(v, int):
               data.append(int(args[location+1]))
@@ -125,13 +125,13 @@ class Communicate_CLI(threading.Thread):
     self.command_mgr = CommandsManager()
     self.s = socket.socket()
     try:
-      self.s.bind(Settings.local_conn)
+      self.s.bind(settings.local_conn)
     except socket.error as serr:
       if serr.errno == errno.EADDRINUSE:
-        raise InstanceRunning('It appears there is already an instance running on this port. [{}]'.format(Settings.local_conn[1]))
+        raise InstanceRunning('It appears there is already an instance running on this port. [{}]'.format(settings.local_conn[1]))
       raise serr
     
-    self.s.listen(Settings.socket_backlog)
+    self.s.listen(settings.socket_backlog)
     self.running = False
     self.daemon = True
     self.start()

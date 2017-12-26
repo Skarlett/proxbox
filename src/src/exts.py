@@ -72,7 +72,6 @@ class Extension:
   def load_ext(self):
     ''' gimme moar stuff '''
     #                        walk(Settings.soure_folder, ...
-    
     fs = list(self.find_files())
     
     for mod in fs:
