@@ -1,12 +1,16 @@
 import re, Settings, logging
 from exts import Extension
-from utils import safe_eval
+
 
 class Exception(Exception): pass
 class NotImplemented(Exception): pass
 class ProgrammingError(Exception): pass
 class SyntaxError(ProgrammingError): pass
 
+
+def safe_eval(string, dirs={}):
+  dirs["__builtins__"] = dirs or None
+  return eval(string, dirs)
 
 
 class LogicInterpreter:
@@ -20,7 +24,7 @@ class LogicInterpreter:
     self.passive_funcs = set()
     self.active_funcs = set([LogicInterpreter.range, safe_eval])
     self.exts = Extension(self, 'factory_mods')
-  
+    
   
   def generate(self, url):
     iteratives = []

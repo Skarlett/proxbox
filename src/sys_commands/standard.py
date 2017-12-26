@@ -14,10 +14,7 @@ def total_cnt(parent):
 
 def uptime(parent):
   '''up time.'''
-  return parent.uptime()
-
-def alive():
-  return True
+  return parent.Utils.h_time(parent.uptime())
 
 ##
 # Human stuff
@@ -27,7 +24,7 @@ def info(parent):
   '''general application runtime stats'''
   try:
     msg = 'Total \ Online\n%d \ %d\nMine iterations: %d\n uptime: %s\nLast scraped: [%s] [%s]\nStatus: [%s]\nProviders: %d' % \
-          (parent.total_cnt(), parent.online_cnt(), parent.mine_cnt, uptime(parent),
+          (parent.total_cnt(), parent.online_cnt(), parent.mine_cnt, parent.uptime(),
            str(parent.last_scraped[0]),
            parent.Utils.h_time(time.time() - float(parent.last_scraped[1])), parent.current_task,
            len(parent.factory.providers))
@@ -103,12 +100,6 @@ def scrape(parent):
   '''force parent to scrape'''
   return parent.scrape()
 
-
-def kill(parent):
-  ''' Kills process '''
-  parent.shutdown()
-
-
 def setup(parent):
   parent.commands.extend([
     Command(get, ('-g',),
@@ -122,9 +113,7 @@ def setup(parent):
               ('nonspecific', ('-p', '--protocol'))
             )),
     Command(info, ('-i',)),
-    Command(alive, show_help=False),
     providers,
     scrape,
-    pinfo,
-    kill
+    pinfo
   ])
