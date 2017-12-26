@@ -53,11 +53,12 @@ class Extra_miner(threading.Thread):
     self.daemon = True
     self.parent = parent
     self.timeout = timeout
-  
+    self.status= 'init'
   def run(self):
     while self.parent.running:
       if not self.parent._container.empty():
         self.parent.current_task = 'mining'
+        self.status = 'ClinkClink.'
         proxy = Proxy(self.parent, *self.parent._container.get())
         if not proxy.dead:
           if time.time() - proxy.last_mined >= settings.mine_wait_time:
@@ -65,8 +66,11 @@ class Extra_miner(threading.Thread):
         else:
           self.parent._db.remove(proxy.uuid)
         self.parent._container.task_done()
+  
       else:
+        self,status = 'chilling'
         time.sleep(5)
+      
 
 
 class Proxy:
@@ -580,7 +584,7 @@ class ProxyFrame:
         self.miner(0)
         self.do_tasks()
     else:
-      self._container = MiningQueue(1000000)
+      self._container = MiningQueue(1000)
       self._miners = [Extra_miner(self, timeout) for _ in xrange(settings.threads)]
       for b in self._miners:
         b.start()
