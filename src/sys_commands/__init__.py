@@ -24,7 +24,7 @@ class Locator:
 
 
 class Command:
-  def __init__(self, f, aliases=tuple(), param_map=list(), self_name=True, show_help=True):
+  def __init__(self, f, aliases, param_map=list(), self_name=True):
     self.f = f
     if self_name:
       self.aliases = aliases+('--'+f.__name__,)
@@ -34,7 +34,6 @@ class Command:
       else:
         raise NoAlias(str(f)+' was assigned with no command attached eg. "--flag"')
     self.param_map = param_map
-    self.help_menu = show_help
   
   def execute(self, *args, **kwargs):
     return self.f(*args, **kwargs)

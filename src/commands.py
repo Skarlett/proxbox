@@ -23,21 +23,8 @@ def find_in_args(args, data):
 class CommandsManager:
   def __init__(self):
     # ProxyFrame
-    
-    self.commands = [
-      Command(CommandsManager.help, ('-h',)),
-      Command(CommandsManager._reload, ())
-    ]
+    self.commands = [Command(CommandsManager.help, ('-h',))]
     self.exts = Extension(self, 'sys_commands')
-    self.after_load()
-  
-  @staticmethod
-  def _reload(parent):
-    ''' reload extensions '''
-    parent.reload()
-    return 'Reloaded.'
-  
-  def after_load(self):
     temp = []
     for c in self.commands:
       if is_func(c):
@@ -45,32 +32,30 @@ class CommandsManager:
       temp.append(c)
     self.commands = temp
   
-    
   def _pack(self, c, args):
-    if c.param_map:
-      data = []
-      for v, aliases in c.param_map:
-        location = [find_in_args(args, a) for a in aliases if a in args]
-        if location:
-            location = location[0]
-            print v, aliases
-            if type(v) == bool:
-              print not(v)
-              data.append(not(v))
-            elif isinstance(v, int):
-              data.append(int(args[location+1]))
-            elif isinstance(v, str):
-              data.append(args[location+1])
-            else: data.append(v)
-        else: data.append(v)
-    else: data = args
+    data = []
+    for v, aliases in c.param_map:
+      location = [find_in_args(args, a) for a in aliases if a in args]
+      if location:
+          location = location[0]
+          print v, aliases
+          if type(v) == bool:
+            print not(v)
+            data.append(not(v))
+          elif isinstance(v, int):
+            data.append(int(args[location+1]))
+          elif isinstance(v, str):
+            data.append(args[location+1])
+          else: data.append(v)
+      else: data.append(v)
     return data
   
   @staticmethod
   def help(parent):
-      '''This displayed help message.'''
-      return '\n'.join('['+' | '.join(x.aliases)+'] {}'.format(x.f.__doc__)
-                       for x in parent.communicate.command_mgr.commands if x.help_menu)
+      '''
+      This displayed help message.
+      '''
+      return '\n'.join('['+' | '.join(x.aliases)+'] {}'.format(x.f.__doc__) for x in parent.communicate.command_mgr.commands)
   
   def sys_exec(self, *args):
     c = [c for c in self.commands if args[1] in c.aliases]

@@ -12,16 +12,15 @@ class BadFormatProvider(Error): pass
 
 
 class Factory():
+  logic_interpreter = LogicInterpreter()
   directory = Settings.providers_folder
   
   def __init__(self):
-    self.logic_interpreter = LogicInterpreter()
     self.json = dict()
     self.providers = set()
     self._load()
-    self.exts = Extension(self, 'extended_providers')
-  
-  
+    self.exts = Extension(self, 'crawlers')
+    
   def _load(self):
     for root, _, files in walk(Settings.providers_folder):
       for _file in files:
