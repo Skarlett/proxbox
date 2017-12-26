@@ -1,7 +1,7 @@
 # px
 This tool is a daemon with (over sockets) CLI tools. used for collecting (Sqlite3), storing and checking proxy servers.
 
-Current Version: 1.1.1
+Current Version: 1.1.2
 
 ### Change list
   + Fix Bug: Possibility of it not scanning HTTP/HTTPS/SOCK4 (1.1.1)
