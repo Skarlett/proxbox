@@ -22,7 +22,7 @@ providers_folder = path.join(etc_folder, 'providers')
 
 # data_folder = path.join(etc_folder, 'data')
 # log_folder = path.join(etc_folder, 'logs')
-# ext_folder = path.join(etc_folder, 'ext')
+ext_folder = path.join(etc_folder, 'ext')
 
 ##
 # Files
