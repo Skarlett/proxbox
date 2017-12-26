@@ -36,9 +36,15 @@ def isSocks4Protocol(ip, port, timeout=Settings.global_timeout):
   s.settimeout(timeout)
   s.connect((ip, port))
   s.send(struct.pack('>BBH', 4, 1, port) + bip + struct.pack('B', 0))
-  resp = struct.unpack('BB', s.recv(2))
-  if len(resp) > 1:
-    return resp[0] == 0 and resp[1] == 90
+  try:
+    _d = s.recv(2)
+  except:
+    return False
+  
+  if _d:
+    resp = struct.unpack('BB', _d)
+    if len(resp) > 1:
+      return resp[0] == 0 and resp[1] == 90
   return False
 
 def _http_wrapper(method, ip, port, timeout=Settings.global_timeout):
@@ -67,7 +73,6 @@ supported_protocols = {
 
 def discover_protocol(proxy, timeout=Settings.global_timeout):
   if proxy.port > 0 and proxy.port <= 65535:  # Port check
-    error = False
     for t, f in supported_protocols.items():
       if t in Settings.collect_protocol:
         start = time.time()
@@ -78,9 +83,12 @@ def discover_protocol(proxy, timeout=Settings.global_timeout):
         except socket.timeout:
           pass
         except (Exception, socket.error) as e:
-          if not e.errno in (errno.ETIMEDOUT, errno.ECONNABORTED, errno.ECONNREFUSED, errno.EHOSTUNREACH):
-            logging.exception('Exception raised in '+t+' '+e.__class__.__name__)
-             # error = True
+          if hasattr(e, 'errno'):
+            if not e.errno in (errno.ETIMEDOUT, errno.ECONNABORTED, errno.ECONNREFUSED, errno.EHOSTUNREACH):
+              logging.exception('Exception raised in '+t+' '+e.__class__.__name__)
+          else:
+            logging.exception('Exception raised in ' + t + ' ' + e.__class__.__name__)
+  
     
     # if not Settings.keep_unregonized_protocols and not error:
     #   proxy.die()

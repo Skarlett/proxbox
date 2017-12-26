@@ -2,10 +2,11 @@
 # Our libs
 ##
 from exts import Extension               # tiny extension framework
-from extended_providers import MaxRetry, IPPattern  # An exception
+from extended_providers import MaxRetry, IPPattern  # An exception, a re pattern
 from utils import MiningQueue            # set queue
 from commands import Communicate_CLI     # threaded communication and command framework
 from scanner import discover_protocol
+from commands import CommandsManager, Command
 import Settings                          # config
 import providers_factory                 # providers stuff
 import utils
@@ -125,8 +126,8 @@ class Proxy:
       self.parent._db.modify(self.uuid, 'ANONLVL', self.anonlvl)
     self.die()
   
-  def die(self, check_policy=True):
-    if check_policy and not self.check_policy():
+  def die(self, check_policy=True, force_policy=False):
+    if check_policy and not self.check_policy(force_policy):
       return
     self.parent._db.modify(self.uuid, 'REMOVE', 1)
   
@@ -136,7 +137,7 @@ class Proxy:
     else:
       resp = requests.get(self.protocol + '://httpbin.org/get?show_env',
                           proxies={
-                            self.protocol: self.protocol + '://' + self.ip + ':' + self.port
+                            self.protocol: self.protocol + '://' + self.ip + ':' + str(self.port)
                           },
                           headers={'User-Agent': 'Test'})
       
@@ -158,8 +159,10 @@ class Proxy:
         return 'Transparent'
       else:
         obsurce = True
-      if content['User-Agent'] == 'Test':
-        user_agent = True
+      
+      if 'User-Agent' in content:
+        if content['User-Agent'] == 'Test':
+          user_agent = True
       
       if proxy_net:
         return 'Elite'
@@ -206,8 +209,8 @@ class Proxy:
     except ZeroDivisionError:
       return 0
   
-  def check_policy(self):
-    return Settings.remove_when_total <= self.alive_cnt + self.dead_cnt and \
+  def check_policy(self, force=False):
+    return force or Settings.remove_when_total <= self.alive_cnt + self.dead_cnt and \
            float(self.reliance()) <= float(Settings.remove_by_reliance) and \
            time.time() >= float(self.first_added) + Settings.remove_when_time_kept
 
@@ -238,8 +241,8 @@ class ProxyFrameDB(Sqlite3Worker):
       self.execute('''
       CREATE TABLE RENEWAL(
         UUID TEXT,
-        EPOCH TEXT
-        /* DEAD_CNT INTEGER removed */
+        EPOCH TEXT,
+        UNIQUE(UUID) ON CONFLICT REPLACE
       );
       ''')
       
@@ -310,18 +313,25 @@ class ProxyFrame:
     :param proxyDbLoc:
     :param threads:
     '''
+    ###
+    # Main
+    ##
     self._db = ProxyFrameDB(proxyDbLoc)
     self._start_time = time.time()
     self._container = None
     self._miners = []
     self.tasks = [ProxyFrame._scrape]
-
-    # Stuff we made
+    
+    ###
+    # Extensions
+    ##
     self.factory = providers_factory.Factory()
     self.communicate = Communicate_CLI(self)
     self.exts = Extension(self, 'tasks')
     
-    # Extra stuff
+    ###
+    # sugar
+    ##
     self.mine_cnt = 0
     self.current_task = "init"
     self.running = True
@@ -337,6 +347,51 @@ class ProxyFrame:
       #     Utils
   
   
+  def reload_crawlers(self):
+    ''' reload crawlers'''
+    for m in self.factory.exts.loaded:
+      reload(m)
+    self.factory.providers = set()
+    self.factory._load()
+    self.factory.exts.reload_setup_hooks()
+  
+  def reload_interpreter(self):
+    '''reload json interpretation '''
+    for m in self.factory.logic_interpreter.exts.loaded:
+      reload(m)
+    self.factory.logic_interpreter.passive_funcs = set()
+    self.factory.logic_interpreter.active_funcs = set([self.factory.logic_interpreter.range, utils.safe_eval])
+    self.factory.logic_interpreter.exts.reload_setup_hooks()
+  
+  def reload_commands(self):
+    '''reloads sys_commands'''
+    for m in self.communicate.command_mgr.exts.loaded:
+      reload(m)
+    
+    self.communicate.command_mgr.commands = [
+      Command(CommandsManager.help, ('-h',)),
+      Command(CommandsManager._reload, ())
+    ]
+    
+    self.communicate.command_mgr.exts.reload_setup_hooks()
+    self.communicate.command_mgr.after_load()
+    #print self.communicate.command_mgr.commands
+  
+  def reload_tasks(self):
+    ''' reloads tasks'''
+    for m in self.exts.loaded:
+      reload(m)
+    
+    self.tasks = [ProxyFrame._scrape]
+    self.exts.reload_setup_hooks()
+
+  def reload(self, reload_funcs=None):
+    '''reloads all extensible code, and forces a json provider reload'''
+    reload_funcs = reload_funcs or [self.reload_tasks, self.reload_crawlers,
+                                    self.reload_commands, self.reload_interpreter]
+    for x in reload_funcs:
+      x()
+    
   def scrape(self, force=False):
     return ProxyFrame._scrape(self, force=force)
   
@@ -409,7 +464,7 @@ class ProxyFrame:
     '''
     :return: int; Seconds elapsed from start up
     '''
-    return time.time() - self._start_time
+    return utils.h_time(time.time() - self._start_time)
   
   def total_proxies(self):
     '''
@@ -423,13 +478,6 @@ class ProxyFrame:
     '''
     return self._db.execute('SELECT Count(*) FROM PROXY_LIST WHERE ONLINE = 1')[0][0]
   
-  def reload(self):
-    '''
-    reloads all the cool stuff that should be adjustments by the user
-    :return: None
-    '''
-    for m in [Settings, commands]:
-      reload(m)
   
   def shutdown(self):
     ''' Nicely shuts everything down for us '''
