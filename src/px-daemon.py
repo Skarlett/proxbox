@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from __init__ import *
-from Settings import *
+from settings import *
 from os import mkdir
 
 def check_dirs():
@@ -12,7 +12,7 @@ def check_dirs():
 
 if __name__ == '__main__':
   check_dirs()
-  pxf = ProxyFrame(Settings.database, Settings.threads)
+  pxf = ProxyFrame(settings.database, settings.threads)
   try:
     pxf.start()
   except KeyboardInterrupt:
