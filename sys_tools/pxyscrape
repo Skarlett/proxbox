@@ -1,8 +1,8 @@
-#!/bin/usr/python
+#!/usr/bin/python
 from os.path import isfile
 import sys
 sys.path.append('../src')
-from extended_providers import Provider, proxyScrape
+from extended_providers import Skeleton, proxyScrape
 
 __author__ = "https://github.com/Skarlett"
 
@@ -24,7 +24,7 @@ if __name__ == '__main__':
         urls = argv[3:]
       
       if len(urls) > 0:
-        p = Provider(jsgen=js_gen)
+        p = Skeleton(jsgen=js_gen)
         for x in urls:
           if not x.startswith('http'):
             x = 'http://'+x
