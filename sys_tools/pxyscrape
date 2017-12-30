@@ -33,7 +33,7 @@ if __name__ == '__main__':
         
         if len(p.proxies) > 0:
           for ip, port in p.proxies:
-            print(':'.join((ip, port)))
+            print(':'.join((ip, str(port))))
             
         else: print("No proxies found")
       else:
