@@ -580,7 +580,7 @@ class ProxyFrame:
         self._db.remove(proxy.uuid)
   
   def start(self, find_method='ALIVE_CNT', order_method='ASC', include_online=True, timeout=5, threads=Settings.threads):
-    if 0 in [self.threads, threads]:
+    if self.threads == 0:
       while self.running:
         self.miner(0)
         self.do_tasks()

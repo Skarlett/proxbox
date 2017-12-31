@@ -38,6 +38,7 @@ class LogicInterpreter:
         except IndexError:
           #try:
             raise NotImplemented('Function "{}" was not loaded into Active_funcs'.format(funcname))
+          
           #except NotImplemented as e:
           #  logging.warning('Function ({}) ignored'.format(funcname))
         #    cntue = False

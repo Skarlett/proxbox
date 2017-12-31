@@ -39,9 +39,12 @@ class Factory():
           for proto in data['types']:
             if proto.lower() in settings.collect_protocol+['nonspecific']:
               for url in data['types'][proto]:
-                for nurl in self.logic_interpreter.generate(url):
-                  urls.add(nurl)
-
+                try:
+                  for nurl in self.logic_interpreter.generate(url):
+                    urls.add(nurl)
+                except NotImplemented:
+                  logging.warning('Could not generate "{}" because its logic was not implemented'.format(url))
+                  
           if not 'driver' in data:
             data['driver'] = 'requests'
               
