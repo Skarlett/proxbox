@@ -73,10 +73,19 @@ class CommandsManager:
                        for x in parent.communicate.command_mgr.commands if x.help_menu)
   
   def sys_exec(self, *args):
-    c = [c for c in self.commands if args[1] in c.aliases]
-    if c: c = c[0]
-    else: return None
-    return c, self._pack(c, args[2:] if len(args) > 1 else tuple())
+    if args > 1:
+      c = [c for c in self.commands if args[1] in c.aliases]
+      if c:
+        c = c[0]
+        if len(args) > 1:
+          return c, self._pack(c, args[2:])
+        
+        else:
+          return c, tuple()
+        
+          
+      
+    
     
 # fuck = Command(lambda: 'test', ('--superman', '-sm'), param_map=((False, ('-b', '--bot')), (False, ('-g', '--geo'))), self_name=False)
 # fuckery = CommandsManager()
