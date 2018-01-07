@@ -1,4 +1,4 @@
-from __init__ import Locator, Command
+from __init__ import Locator, Command, Alias
 import time
 
 USE = True
@@ -42,8 +42,17 @@ def info(parent):
     msg += '{}:{}\n'.format(x, resp or 0)
   
   msg += '\nThreads: ' + str(len(parent._miners) + 3)
-  msg += '\nMiner Queues:\n\t'
-  msg += '\n\t'.join('[= {} =]'.format(x.status) for x in parent._miners)
+  working = 0
+  sleeping = 0
+  for x in parent._miners:
+    if x.status[0] == 'C':
+      working+=1
+    else:
+      sleeping+=1
+  
+  msg += '\nMiner Queues: [ Working: {}] [Chilling: {}]'.format(working, sleeping)
+  
+  #msg += '\n\t'.join('[= {} =]'.format(x.status) for x in parent._miners)
   return msg.strip()
 
 def pinfo(parent, req):
@@ -105,27 +114,22 @@ def scrape(parent):
   return parent.scrape()
 
 
-def kill(parent):
-  ''' Kills process '''
-  parent.shutdown()
-
 
 def setup(parent):
   parent.commands.extend([
     Command(get, ('-g',),
             param_map=(
-              (1, ('-c', '--count')),
-              (False, ('-b', '--bot')),
-              (False, ('-nc', '--no-check')),
-              (False, ('-o', '--online')),
-              (10, ('-t',)),
-              (False, ('--geo', '-g')),
-              ('nonspecific', ('-p', '--protocol'))
+              Alias(1, aliases=('-c', '--count'), help_desc='Amount of proxies to collect.'),
+              Alias(False, aliases=('-b', '--bot'), help_desc='List out put format'),
+              Alias(False, aliases=('-ch', '--check'), help_desc='Check proxies before giving them,'),
+              Alias(False, aliases=('-o', '--online'), help_desc='Asserts proxy\'s online'),
+              Alias(False, aliases=('--geo', '-g'), help_desc='Gathers Location data.'),
+              Alias('nonspecific', aliases=('-p', '--protocol'), help_desc='Specifies protocol for selection')
             )),
     Command(info, ('-i',)),
     Command(alive, show_help=False),
     providers,
     scrape,
     pinfo,
-    kill
+
   ])

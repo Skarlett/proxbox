@@ -23,6 +23,19 @@ class Locator:
       setattr(self, k, v)
 
 
+class Alias:
+  def __init__(self, default_val, help_desc=None, aliases=tuple()):
+    self.default_val = default_val
+    self.aliases = aliases
+    self.help = help_desc
+    self.type = type(self.default_val)
+    
+  def format_param_help(self):
+    if not self.type == bool:
+      val_needed = '<{}>'.format(type(str()))[7:][:-2]
+    else: val_needed = None
+    return '[{}] ' + val_needed if val_needed else '' + ' {}'.format(' | '.join(self.aliases), self.help)
+
 class Command:
   def __init__(self, f, aliases=tuple(), param_map=list(), self_name=True, show_help=True):
     self.f = f
@@ -38,4 +51,3 @@ class Command:
   
   def execute(self, *args, **kwargs):
     return self.f(*args, **kwargs)
-    

@@ -7,12 +7,23 @@ import threading
 import settings
 import errno
 import logging
+from time import gmtime, strftime
+
 
 class InstanceRunning(Exception):
   '''
   Called when it is believed when two programs might be trying to run.
   '''
   pass
+
+
+class ProtocolLog:
+  def __init__(self, fp):
+    self.fp = fp
+  
+  def log(self, user, msg):
+    with open(self.fp, 'a') as f:
+      f.write(':'.join([user.ip, strftime('%m-%d-%Y %H:%M:%S', gmtime()), msg]))
 
 def find_in_args(args, data):
   for i, x in enumerate(args):
@@ -30,6 +41,7 @@ class CommandsManager:
     ]
     self.exts = Extension(self, 'sys_commands')
     self.after_load()
+    print self.commands
   
   @staticmethod
   def _reload(parent):
@@ -37,41 +49,71 @@ class CommandsManager:
     parent.reload()
     return 'Reloaded.'
   
+  def loaded_in(self, CommandObject, all_aliases=None):
+    if not all_aliases:
+      all_aliases = [x.aliases for x in self.commands if not is_func(x)]
+
+    for x in CommandObject.aliases:
+      if x in all_aliases:
+        if x in all_aliases:
+          return True
+    return False
+  
   def after_load(self):
+    aliases = []
     temp = []
     for c in self.commands:
       if is_func(c):
+        default_flag = '--'+c.__name__
+        if default_flag in aliases:
+          logging.warning('Conflicting aliases {}, already loaded'.format(default_flag))
         c = Command(c, ())
-      temp.append(c)
+        aliases.append(default_flag)
+        
+      else:
+        if self.loaded_in(c, aliases):
+          logging.warning('Conflicting Aliases {}, already loaded'.format(c.aliases))
+          c = None
+      if c:
+        aliases.extend(c.aliases)
+        temp.append(c)
     self.commands = temp
-  
     
   def _pack(self, c, args):
     if c.param_map:
       data = []
-      for v, aliases in c.param_map:
-        location = [find_in_args(args, a) for a in aliases if a in args]
+      # Handles flagged / aliased statements
+      for flag in c.param_map:
+        location = [find_in_args(args, a) for a in flag.aliases if a in args]
         if location:
             location = location[0]
             # print v, aliases
-            if type(v) == bool:
-              # print not(v)
-              data.append(not(v))
-            elif isinstance(v, int):
+            if flag.type is bool:
+              data.append(not(flag.default_value))
+            elif flag.type is int:
               data.append(int(args[location+1]))
-            elif isinstance(v, str):
+            elif flag.type is str:
               data.append(args[location+1])
-            else: data.append(v)
-        else: data.append(v)
+            else:
+              data.append(flag.default_value)
+        else:
+          data.append(flag.default_value)
     else: data = args
     return data
   
   @staticmethod
   def help(parent):
       '''This displayed help message.'''
-      return '\n'.join('['+' | '.join(x.aliases)+'] {}'.format(x.f.__doc__)
-                       for x in parent.communicate.command_mgr.commands if x.help_menu)
-  
+      msg = ''
+      for cmd in parent.communicate.command_mgr.commands:
+        msg += '[ '+ ' | '.join(cmd.aliases)+' ]\n'
+        msg += '\t'+str(cmd.__doc__)
+        if cmd.param_map:
+          msg += '\t\n'.join(x.format_param_help() for x in cmd.param_map)
+      
+      return msg
+      
+      
   def sys_exec(self, *args):
     if args > 1:
       c = [c for c in self.commands if args[1] in c.aliases]
@@ -79,25 +121,22 @@ class CommandsManager:
         c = c[0]
         if len(args) > 1:
           return c, self._pack(c, args[2:])
-        
         else:
           return c, tuple()
         
-          
-      
-    
-    
-# fuck = Command(lambda: 'test', ('--superman', '-sm'), param_map=((False, ('-b', '--bot')), (False, ('-g', '--geo'))), self_name=False)
-# fuckery = CommandsManager()
-# print fuckery._pack(fuck, ('-g', '--geo', '-b', '--bot'))
-
-class User:
-  def __init__(self, s, con, timeout=30):
-    ''' super simple way of passing data basically way higher than you'd ever need'''
+        
+class User(threading.Thread):
+  def __init__(self, s, con, parent, cmd_mgr, timeout=30):
+    ''' Threaded response server '''
+    threading.Thread.__init__(self)
+    self.daemon = True
+    self.parent = parent
+    self.cmd_mgr = cmd_mgr
     self.s = s
     self.ip, self.port = con
     self.s.settimeout(timeout)
     self.msg = None
+    self.key = self.s.recv(256)
   
   def send(self, msg):
     '''i give you data'''
@@ -121,6 +160,36 @@ class User:
         return None
       data += packet
     return data
+  
+  def run(self):
+    package = self.recv()
+    if package:
+      values = self.cmd_mgr.sys_exec(*[x for x in package.split(' ') if x])
+      if values:
+        c, args = values
+        try:
+          resp = c.execute(self.parent, *args)
+          if resp:
+            self.send(resp)
+        except Exception:
+          self.send('Error in Command.')
+          logging.exception('Error raised on Command. {}, {} '.format(c, args))
+      else:
+        self.send('Not a command')
+    else:
+      self.send('Error.')
+    self.s.close()
+
+class NetworkManager:
+  def __init__(self):
+    self.mods = list()
+    self.exts = Extension(self, 'networking_mods')
+        
+  def check_user(self, user):
+    for rule in self.mods:
+      if not rule.check(user):
+        return False, rule
+    return True, None
 
 class Communicate_CLI(threading.Thread):
   def __init__(self, parent):
@@ -132,6 +201,7 @@ class Communicate_CLI(threading.Thread):
     threading.Thread.__init__(self)
     self.parent = parent
     self.command_mgr = CommandsManager()
+    self.networking_rules = NetworkManager()
     self.s = socket.socket()
     try:
       self.s.bind(settings.local_conn)
@@ -148,22 +218,14 @@ class Communicate_CLI(threading.Thread):
   def run(self):
     self.running = True
     while self.running:
-      user = User(*self.s.accept())
-      package = user.recv()
-      if package:
-        values = self.command_mgr.sys_exec(*[x for x in package.split(' ') if x])
-        if values:
-          c, args = values
-          try:
-            resp = c.execute(self.parent, *args)
-            if resp:
-              user.send(resp)
-          except Exception:
-            user.send('Error in Command.')
-            logging.exception('Error raised on Command. {}, {} '.format(c, args))
-        else:
-          user.send('Not a command')
+      s, con = self.s.accept()
+      user = User(s, con, self.parent, self.command_mgr)
+      auth, r = self.networking_rules.check_user(user)
+      if auth:
+        user.s.send('OK')
+        user.start()
       else:
-        user.send('Error.')
-      user.s.close()
+        user.s.send(r.fail_reason)
+        user.s.close()
+      
 

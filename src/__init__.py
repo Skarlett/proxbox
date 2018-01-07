@@ -511,7 +511,7 @@ class ProxyFrame:
   
   
   def get(self, cnt=1, check_alive=True,
-          online=True, timeout=10, protocol='nonspecific',
+          online=True, protocol='nonspecific',
           order_by='RANDOM()'):
     '''
     receive proxies :D
@@ -538,7 +538,7 @@ class ProxyFrame:
         if row:
           proxy = self.Proxy(self, *row)
           if check_alive:
-            if proxy.is_alive(timeout):
+            if proxy.is_alive(settings.global_timeout):
               proxy.checked(True)
               valid_response += 1
               yield proxy
@@ -579,7 +579,7 @@ class ProxyFrame:
       else:
         self._db.remove(proxy.uuid)
   
-  def start(self, find_method='ALIVE_CNT', order_method='ASC', include_online=True, timeout=5, threads=Settings.threads):
+  def start(self, find_method='ALIVE_CNT', order_method='ASC', include_online=True, timeout=settings.global_timeout):
     if self.threads == 0:
       while self.running:
         self.miner(0)
