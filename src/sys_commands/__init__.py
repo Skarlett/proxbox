@@ -14,6 +14,7 @@ class NoAlias(Exception):
   '''
 
 class Locator:
+  ''' Gets Location data from ip-api.com in json format and appends data to self.'''
   def __init__(self, ip):
     self.ip = ip
     self._request = requests.get('http://ip-api.com/json/'+self.ip)
@@ -24,6 +25,7 @@ class Locator:
 
 
 class Alias:
+  '''Extra layer of abstraction to be used by the help menu'''
   def __init__(self, default_val, help_desc=None, aliases=tuple()):
     self.default_val = default_val
     self.aliases = aliases
@@ -37,6 +39,7 @@ class Alias:
     return '[{}] ' + val_needed if val_needed else '' + ' {}'.format(' | '.join(self.aliases), self.help)
 
 class Command:
+  '''Layer of abstraction that contains functions and Alias objects in param_map'''
   def __init__(self, f, aliases=tuple(), param_map=list(), self_name=True, show_help=True):
     self.f = f
     if self_name:

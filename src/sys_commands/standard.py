@@ -3,7 +3,6 @@ import time
 
 USE = True
 
-
 def online_cnt(parent):
   '''online count'''
   return parent.online()
@@ -66,15 +65,14 @@ def pinfo(parent, req):
   return msg
 
 def get(parent, cnt=1, bot=False, check_alive=True,
-        online=True, timeout=10, give_geo_info=True,
+        online=True, give_geo_info=True,
         protocol='nonspecific'):
-  '''receives proxy(s) for you'''
+  '''fetches proxies for you'''
   msg = ''
   if bot and give_geo_info:
     give_geo_info = False
   
-  for i, proxy in enumerate(parent.get(cnt, check_alive=check_alive, online=online,
-                                            timeout=timeout, protocol=protocol)):
+  for i, proxy in enumerate(parent.get(cnt, check_alive=check_alive, online=online, protocol=protocol)):
     if not bot:
       msg += 'UUID: ' + str(proxy.uuid) + '\n'
       msg += 'Online: %s\n' % str(proxy.online)
@@ -109,11 +107,6 @@ def providers(parent):
                               parent.Utils.h_time(time.time() - float(last_scrape)))
     return msg.strip()
 
-def scrape(parent):
-  '''force parent to scrape'''
-  return parent.scrape()
-
-
 
 def setup(parent):
   parent.commands.extend([
@@ -129,7 +122,6 @@ def setup(parent):
     Command(info, ('-i',)),
     Command(alive, show_help=False),
     providers,
-    scrape,
     pinfo,
 
   ])

@@ -4,17 +4,25 @@ from os import system
 
 USE = True
 
-#def sql(parent, *args):
-#  return parent._db.execute(' '.join(args))
+def scrape(parent):
+  '''force parent to scrape'''
+  return parent.scrape()
+
+def sql(parent, *args):
+  ''' sql injection '''
+  return parent._db.execute(' '.join(args))
 
 def clear(_):
+  ''' clear console '''
   system("clear")
 
 def say(_, *args):
+  '''repeats what you say '''
   return ' '.join(args)
 
-def _eval(parent, *args):
- return eval(' '.join(args))
+def _eval(_, *args):
+  '''Evaluate something '''
+  return eval(' '.join(args))
 
 def test(_):
   ''' Test for response'''
@@ -25,6 +33,7 @@ def kill(parent):
   ''' Kills process '''
   parent.shutdown()
 
+
 def setup(cmd):
   cmd.commands.extend([
    Command(online_cnt, ('-oc',), self_name=False),
@@ -34,5 +43,5 @@ def setup(cmd):
    test,
    say,
    clear,
-   kill
+   kill,
   ])

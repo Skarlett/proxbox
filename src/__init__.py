@@ -400,6 +400,7 @@ class ProxyFrame:
                                     self.reload_commands, self.reload_interpreter]
     for x in reload_funcs:
       x()
+    reload(settings)
     
   def scrape(self, force=False):
     return ProxyFrame._scrape(self, force=force)
@@ -426,20 +427,7 @@ class ProxyFrame:
     
       if force or time.time() >= epoch + result.renewal:
         pxf.current_task = "scraping"
-        if settings.safe_run:
-          try:
-            result.scrape()
-          except KeyboardInterrupt:
-            break
-            
-          except Exception:
-            logging.exception('Scraping %s failed.' % result.uuid)
-            result.use = False
-        else:
-          try:
-            result.scrape()
-          except MaxRetry:
-            pass
+        result.scrape()
       
         if len(result.proxies) > 0:
           if result.use:

@@ -7,7 +7,6 @@ import threading
 import settings
 import errno
 import logging
-from time import gmtime, strftime
 
 
 class InstanceRunning(Exception):
@@ -15,15 +14,6 @@ class InstanceRunning(Exception):
   Called when it is believed when two programs might be trying to run.
   '''
   pass
-
-
-class ProtocolLog:
-  def __init__(self, fp):
-    self.fp = fp
-  
-  def log(self, user, msg):
-    with open(self.fp, 'a') as f:
-      f.write(':'.join([user.ip, strftime('%m-%d-%Y %H:%M:%S', gmtime()), msg]))
 
 def find_in_args(args, data):
   for i, x in enumerate(args):
@@ -89,30 +79,33 @@ class CommandsManager:
             location = location[0]
             # print v, aliases
             if flag.type is bool:
-              data.append(not(flag.default_value))
+              data.append(not(flag.default_val))
             elif flag.type is int:
               data.append(int(args[location+1]))
             elif flag.type is str:
               data.append(args[location+1])
             else:
-              data.append(flag.default_value)
+              data.append(flag.default_val)
         else:
-          data.append(flag.default_value)
+          data.append(flag.default_val)
     else: data = args
     return data
   
   @staticmethod
   def help(parent):
-      '''This displayed help message.'''
-      msg = ''
-      for cmd in parent.communicate.command_mgr.commands:
-        msg += '[ '+ ' | '.join(cmd.aliases)+' ]\n'
-        msg += '\t'+str(cmd.__doc__)
-        if cmd.param_map:
-          msg += '\t\n'.join(x.format_param_help() for x in cmd.param_map)
-      
-      return msg
-      
+    '''This help menu'''
+    msg = ''
+    for x in parent.communicate.command_mgr.commands:
+      msg += '[' + ' | '.join(x.aliases) + '] [{}] \n'.format(x.f.__doc__)
+      if x.param_map:
+        for alias in x.param_map:
+          if not isinstance(alias.default_val, bool):
+            v = ' <{}> '.format(str(alias.type).split('\'')[1].split('\'')[0].upper())
+          else:
+            v = ' '
+          msg += '\t[' + ' | '.join(alias.aliases) + ']' + v + '[{}]'.format(str(alias.help)) +'\n'
+    
+    return msg
       
   def sys_exec(self, *args):
     if args > 1:
@@ -136,8 +129,12 @@ class User(threading.Thread):
     self.ip, self.port = con
     self.s.settimeout(timeout)
     self.msg = None
-    self.key = self.s.recv(256)
-  
+    try:
+      self.key = self.s.recv(256)
+    except socket.error as e:
+      logging.warning('Non-PX-Client Insufficent Key retrieved.')
+      raise e
+    
   def send(self, msg):
     '''i give you data'''
     msg = struct.pack('>I', len(str(msg))) + str(msg)
@@ -219,13 +216,16 @@ class Communicate_CLI(threading.Thread):
     self.running = True
     while self.running:
       s, con = self.s.accept()
-      user = User(s, con, self.parent, self.command_mgr)
-      auth, r = self.networking_rules.check_user(user)
-      if auth:
-        user.s.send('OK')
-        user.start()
-      else:
-        user.s.send(r.fail_reason)
-        user.s.close()
-      
-
+      try:
+        user = User(s, con, self.parent, self.command_mgr)
+        auth, r = self.networking_rules.check_user(user)
+        if auth:
+          user.s.send('OK')
+          user.start()
+        else:
+          logging.warning('Client Failed authenification on {}:{}'.format(user.ip, user.port))
+          user.s.send(r.fail_reason)
+          user.s.close()
+      except socket.error as e:
+        s.close()
+        logging.exception('Running queue for {} failed. Dumping User\n\n{}'.format(user.ip, vars(user)))

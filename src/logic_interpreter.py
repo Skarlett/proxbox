@@ -1,4 +1,4 @@
-import re, settings, logging
+import re
 from exts import Extension
 from utils import safe_eval
 

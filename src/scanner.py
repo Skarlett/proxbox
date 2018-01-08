@@ -90,12 +90,12 @@ def discover_protocol(proxy, timeout=settings.global_timeout):
           else:
             logging.exception('Exception raised in ' + t + ' ' + e.__class__.__name__)
 
-        except Exception as e:
-          if hasattr(e, 'errno'):
-            if not e.errno in (errno.ETIMEDOUT, errno.ECONNABORTED, errno.ECONNREFUSED, errno.EHOSTUNREACH):
-              logging.exception('Exception raised in '+t+' '+e.__class__.__name__)
-          else:
-            logging.exception('Exception raised in ' + t + ' ' + e.__class__.__name__)
+        # except Exception as e:
+        #   if hasattr(e, 'errno'):
+        #     if not e.errno in (errno.ETIMEDOUT, errno.ECONNABORTED, errno.ECONNREFUSED, errno.EHOSTUNREACH):
+        #       logging.exception('Exception raised in '+t+' '+e.__class__.__name__)
+        #   else:
+        #     logging.exception('Exception raised in ' + t + ' ' + e.__class__.__name__)
   
     
     # if not Settings.keep_unregonized_protocols and not error:

@@ -5,7 +5,6 @@ import socket
 
 USE = True
 
-
 ETC_DIR = path.join(path.split(path.split(path.split(__file__)[0])[0])[0], 'etc')
 SERVER_KEY_FP = path.join(ETC_DIR, 'server.key')
 
@@ -20,7 +19,7 @@ else:
 
 
 class PrivateIP(Rule):
-  def check(self, user):
+  def _check(self, user):
     """
         Credited: Cuckoo package
         Check if the IP belongs to private network blocks.
@@ -60,9 +59,14 @@ class PrivateIP(Rule):
           return True
       except Exception, err:
         continue
-  
     return False
 
+class Authenicate(Rule):
+  def _check(self, user):
+    if user.key == SERVER_KEY:
+      return True
+    else:
+      return False
 
 class Whitelist(Rule):
   def __init__(self):
@@ -77,23 +81,13 @@ class Whitelist(Rule):
     with open(fp) as f:
       self.white_list.extend([x.replace('\n', '') for x in f])
     
-  def check(self, user):
+  def _check(self, user):
     if user.ip in self.white_list:
       return True
     else:
       return False
 
-class Authenicate(Rule):
-  def __init__(self):
-    Rule.__init__(self)
-    
-  def check(self, user):
-    if user.key == SERVER_KEY:
-      user.s.send('OK')
-      return True
-    else:
-      return False
-    
+
 def setup(NetworkManager):
   NetworkManager.mods.extend([
     Or_Conjunction('Access Denied.', Whitelist(), Authenicate(), PrivateIP()) # Server authenication

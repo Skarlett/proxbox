@@ -3,9 +3,20 @@ class Rule():
   def __init__(self):
     # Make check function when you inherent it
     self.fail_reason = None
+    self.log_hook_true= None
+    self.log_hook_false= None
+  
+  def _check(self, user):
+    return False
   
   def check(self, user):
-    return False
+    if self._check(user):
+      self.log_hook_true() if self.log_hook_true else None
+      return True
+    else:
+      self.log_hook_false() if self.log_hook_false else None
+      return False
+
 
 class Conjunction(Rule):
   '''
@@ -24,7 +35,7 @@ class Conjunction(Rule):
       raise ValueError('Needs 2 or more Rules.')
     
     self.rules = rules
-    self.check = lambda user: eval(' {} '.format(self.operator).join(str(x.check(user)) for x in self.rules))
+    self._check = lambda user: eval(' {} '.format(self.operator).join(str(x.check(user)) for x in self.rules))
 
 ##
 # Sugar

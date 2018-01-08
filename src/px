@@ -4,9 +4,9 @@ from sys import argv
 import struct
 
 
-class Settings:
+class settings:
   SERVER_KEY = None
-  timeout = 10
+  timeout = 30
 
 
 def send_msg(sock, msg):
@@ -44,7 +44,7 @@ if __name__ == '__main__':
   if len(argv) > 1:
   
     s = socket()
-    s.settimeout(Settings.timeout)
+    s.settimeout(settings.timeout)
 
     # ip_arg = in_args(argv, '--ip')
     # port_arg = in_args(argv, '--port')
@@ -69,8 +69,8 @@ if __name__ == '__main__':
       print('ProxyMiner not online')
       exit(1)
     
-    if Settings.SERVER_KEY and len(Settings.SERVER_KEY) == 256:
-      s.send(Settings.SERVER_KEY)
+    if settings.SERVER_KEY and len(settings.SERVER_KEY) == 256:
+      s.send(settings.SERVER_KEY)
     else:
       s.send(struct.pack('256B', *(0 for x in range(256))))
       
