@@ -9,7 +9,7 @@
 # Description:       Daemon service to collect, scan and retrieve proxies.
 ### END INIT INFO
 
-dir="/opt/px/"
+dir="/home/px/"
 cmd="source /home/px/venv/bin/activate && python /home/px/src/px-daemon.py"
 user="px"
 
