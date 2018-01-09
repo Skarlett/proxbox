@@ -12,7 +12,7 @@ apt update
 apt-get install python-pip python-virtualenv libmaxminddb0 libmaxminddb-dev mmdb-bin
 
 echo "Making user..."
-useradd -r -g -m -s /bin/false px px
+useradd -r -m -s /bin/false -g px px
 echo "Moving files to new user home"
 mv * /home/px
 chown -R px:px /home/px
