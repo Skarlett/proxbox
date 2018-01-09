@@ -5,16 +5,24 @@ if [ "$EUID" -ne 0 ]
   then echo "Please run as root"
   exit
 fi
+
+echo "installing binaries needed"
+add-apt-repository ppa:maxmind/ppa
+apt update
+apt-get install python-pip python-virtualenv libmaxminddb0 libmaxminddb-dev mmdb-bin
+
 echo "Making user..."
 useradd -r -g -m -s /bin/false px px
 echo "Moving files to new user home"
 mv * /home/px
 chown -R px:px /home/px
-mkdir /home/px/venv
-apt-get install python-pip python-virtualenv
 
+
+echo "setting up virtualenv"
+mkdir /home/px/venv
 virtualenv venv
 source venv/bin/activate
+echo "installing python dependencies"
 pip install -r /home/px/requirements.txt
 
 echo "Checking dependencies"
@@ -24,6 +32,12 @@ else
   echo "Test failed. Stopping installation"
   exit 1
 fi
+echo "Setting up soft links to /usr/sbin"
+ln -s /home/px/sys_tools/px /usr/sbin/px
+ln -s /home/px/sys_tools/geo /usr/sbin/geo
+ln -s /home/px/sys_tools/pxyscrape /usr/sbin/pxyscrape
+echo "Setting up system service"
 
 mv /home/px/etc/px-daemon /etc/init.d/px-daemon
+echo "starting service..."
 sh /etc/init.d/px-daemon start
