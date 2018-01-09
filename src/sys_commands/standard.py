@@ -1,4 +1,4 @@
-from __init__ import Locator, Command, Alias
+from __init__ import Command, Alias
 import time
 
 USE = True
@@ -21,6 +21,9 @@ def alive():
 ##
 # Human stuff
 ###
+def geo(parent, ip):
+  return parent.geo_lookup.get(ip)
+
 
 def info(parent):
   '''general application runtime stats'''
@@ -80,7 +83,7 @@ def get(parent, cnt=1, bot=False, check_alive=True,
       msg += 'Address: %s://%s:%d' % (proxy.protocol, proxy.ip, proxy.port)
       
       if give_geo_info:
-        msg += '\n' + '\n'.join(unicode(k) + ': ' + unicode(v) for k, v in Locator(proxy.ip)._data.items())
+        msg += '\n' + '\n'.join(unicode(k) + ': ' + unicode(v) for k, v in geo(parent, proxy.ip))
       
       if cnt > 1:
         msg += '\n' + '-' * 25 + '\n'
@@ -123,5 +126,5 @@ def setup(parent):
     Command(alive, show_help=False),
     providers,
     pinfo,
-
+    geo,
   ])

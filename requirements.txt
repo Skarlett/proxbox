@@ -1,0 +1,6 @@
+setuptools
+requests
+sqlite3worker
+cfscrape
+maxminddb
+selenium

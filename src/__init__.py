@@ -15,10 +15,12 @@ import utils
 ##
 from sqlite3worker import Sqlite3Worker # Threaded sqlite response
 import requests
+import maxminddb
 
 ###
 # builtins
 ##
+from os import path
 import gzip
 import shutil
 import time
@@ -336,7 +338,7 @@ class ProxyFrame:
     self.factory = providers_factory.Factory()
     self.communicate = Communicate_CLI(self)
     self.exts = Extension(self, 'tasks')
-    
+    self.geo_lookup = maxminddb.open_database(path.join(settings.etc_folder, 'GeoLite2.mmdb'))
     ###
     # sugar
     ##

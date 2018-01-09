@@ -1,0 +1,83 @@
+#!/usr/bin/python
+from socket import socket
+from sys import argv
+import struct
+
+
+class settings:
+  SERVER_KEY = None
+  timeout = 30
+
+
+def send_msg(sock, msg):
+  msg = struct.pack('>I', len(msg)) + msg
+  sock.sendall(msg)
+
+
+def recv_msg(sock):
+  raw_msglen = recvall(sock, 4)
+  if not raw_msglen:
+    return None
+  msglen = struct.unpack('>I', raw_msglen)[0]
+  return recvall(sock, msglen)
+
+
+def recvall(sock, n):
+  data = ''
+  while len(data) < n:
+    packet = sock.recv(n - len(data))
+    if not packet:
+      return None
+    data += packet
+  return data
+
+
+def in_args(args, data):
+  a = [(i, x) for i, x in enumerate(args) if x == data]
+  return a[0] if len(a) > 0 else None
+
+
+
+
+
+if __name__ == '__main__':
+  if len(argv) > 1:
+  
+    s = socket()
+    s.settimeout(settings.timeout)
+
+    # ip_arg = in_args(argv, '--ip')
+    # port_arg = in_args(argv, '--port')
+    # key_arg = in_args(argv, '--key')
+    #
+    # ip = argv[ip_arg+1] if ip_arg else '127.0.0.1'
+    # port = argv[port_arg+1] if port_arg else 52312
+    # key_fp = argv[key_arg+1] if key_arg else None
+    #
+    # for x in [ip_arg, port_arg, key_arg]:
+    #   if x:
+    #     argv.pop(x)
+    #     argv.pop(x+1)
+    
+    ip, port = '127.0.0.1', 52312
+    
+    try:
+      s.connect((ip, port))
+    except KeyboardInterrupt:
+      exit(1)
+    except Exception:
+      print('ProxyMiner not online')
+      exit(1)
+    
+    if settings.SERVER_KEY and len(settings.SERVER_KEY) == 256:
+      s.send(settings.SERVER_KEY)
+    else:
+      s.send(struct.pack('256B', *(0 for x in range(256))))
+      
+    resp = s.recv(2048)
+    if resp == 'OK':
+      send_msg(s, ' '.join(argv))
+      print(recv_msg(s))
+    
+    else:
+      print(resp)

@@ -1,0 +1,254 @@
+{
+  "use":true,
+  "providers": {
+    "my-proxy.com": {
+      "renewal": 172800,
+      "use": true,
+      "types": {
+        "socks5": [
+          "https://www.my-proxy.com/free-socks-5-proxy.html",
+          "https://www.my-proxy.com/free-socks-4-proxy.html"
+        ]
+      }
+    },
+
+
+    "sockslist.net": {
+      "renewal": 28800,
+      "use": true,
+      "types": {
+        "socks5": [
+          "https://sockslist.net/proxy/server-socks-hide-ip-address",
+          "https://sockslist.net/proxy/server-socks-hide-ip-address/{range(2,6)}"
+        ]
+      }
+    },
+
+
+    "socks-proxy.net": {
+      "renewal": 28800,
+      "use": true,
+      "types": {
+        "socks5": [
+          "https://www.socks-proxy.net/"
+        ]
+      }
+    },
+
+    "proxylistplus.com": {
+      "renewal": 86400,
+      "use": true,
+      "types": {
+          "socks5": [
+            "https://list.proxylistplus.com/Socks-List-{range(1,4)}"
+          ]
+        }
+      },
+
+    "xroxy.com": {
+      "renewal": 86400,
+      "use": true,
+      "types": {
+        "socks5": [
+          "http://www.xroxy.com/proxylist.php?port=&type=Socks5&pnum={range(0,9)}"
+        ],
+        "http": [
+          "http://www.xroxy.com/proxylist.php?&pnum={range(0,15)}"
+        ]
+      }
+    },
+
+    "spys.one": {
+      "renewal": 86400,
+      "use": true,
+      "types": {
+        "socks5": [
+          "http://spys.one/en/socks-proxy-list/",
+          "http://spys.one/en/socks-proxy-list/1/",
+          "http://spys.one/en/socks-proxy-list/2/"
+        ],
+        "http": [
+          "http://spys.one/en/https-ssl-proxy/",
+          "http://spys.one/en/https-ssl-proxy/1/",
+          "http://spys.one/en/https-ssl-proxy/2/",
+          "http://spys.one/en/http-proxy-list/",
+          "http://spys.one/en/http-proxy-list/1/",
+          "http://spys.one/en/http-proxy-list/2/"
+        ]
+      }
+    },
+
+    "idcloak.com": {
+      "renewal": 86400,
+      "use": true,
+      "types": {
+        "http": [
+          "http://www.idcloak.com/proxylist/proxy-list.html"
+        ]
+      }
+    },
+
+    "sslproxies.org": {
+      "renewal": 86400,
+      "use": true,
+      "types": {
+        "http": [
+          "https://www.sslproxies.org/"
+        ]
+      }
+    },
+    "proxygaz.com": {
+      "renewal": 86400,
+      "use": true,
+      "types": {
+        "http": [
+          "http://proxygaz.com/"
+        ]
+      }
+    },
+
+    "hidemy.name": {
+      "renewal": 86400,
+      "driver":"cfscrape",
+      "use":true,
+      "types": {
+        "socks5": [
+          "https://hidemy.name/en/proxy-list/?type=5#list",
+          "https://hidemy.name/en/proxy-list/?type=5&start=64#list",
+          "https://hidemy.name/en/proxy-list/?type=5&start=128#list"
+        ]
+      }
+    },
+
+    "www.aliveproxy.com":{
+      "renewal":86400,
+      "use":true,
+      "types":{
+        "socks5":[
+          "http://www.aliveproxy.com/socks5-list/",
+          "http://www.aliveproxy.com/socks-list/socks5.aspx/United_States-us"
+        ],
+        "http":[
+          "http://www.aliveproxy.com/high-anonymity-proxy-list/",
+          "http://www.aliveproxy.com/transparent-proxy-list/",
+          "http://www.aliveproxy.com/anonymous-proxy-list/"
+        ]
+      }
+    },
+
+    "proxy-list.org":{
+      "renewal":86400,
+      "use": true,
+      "types": {
+        "http":["http://proxy-list.org/english/search.php?p={range(1,11)}"]
+      }
+    },
+
+    "proxylist.me": {
+      "renewal":86400,
+      "use":true,
+      "types": {
+        "http": ["https://proxylist.me/?page={range(1,51)}"]
+      }
+    },
+
+    "foxtools.ru":{
+      "renewal": 86400,
+      "use":true,
+      "types": {
+        "http": ["http://foxtools.ru/Proxy?page={range(1,11)}"]
+      }
+    },
+
+    "gatherproxy.com": {
+    "renewal": 86400,
+    "use":true,
+    "types": {
+      "http": ["http://www.gatherproxy.com/"],
+      "socks5":["http://www.gatherproxy.com/sockslist"]
+      }
+    },
+
+    "tools.rosinstrument.com": {
+      "renewal": 86400,
+      "use": true,
+      "types":{
+        "socks5": ["http://tools.rosinstrument.com/raw_free_db.htm?{range(1,50)}&t=3"],
+        "http": [
+          "http://tools.rosinstrument.com/raw_free_db.htm?{range(1,50)}&t=1",
+          "http://tools.rosinstrument.com/raw_free_db.htm?{range(1,50)}&t=2"
+        ]
+      }
+    },
+
+  "xseo.in":{
+    "renewal":86400,
+    "use":true,
+    "types":{
+      "nonspecific": ["http://xseo.in/proxylist"]
+    }
+  },
+
+  "nntime.com": {
+    "renewal":86400,
+    "use":true,
+    "types":{
+      "http":["http://nntime.com/proxy-list-0{range(1,9)}.htm"]
+    }
+  },
+
+  "www.proxynova.com":{
+    "renewal": 86400,
+    "use": true,
+    "types": {
+      "http": ["https://www.proxynova.com/proxy-server-list/country-{country_abrv()}/"]
+    }
+  },
+
+  "free-proxy.cz": {
+    "renewal": 43200,
+    "types": {
+      "socks5": [
+        "http://free-proxy.cz/en/proxylist/country/all/socks5/speed/all",
+        "http://free-proxy.cz/en/proxylist/country/all/socks5/speed/all/{range(1,6)}"
+      ],
+      "http": [
+        "http://free-proxy.cz/en/proxylist/country/all/http/speed/level1",
+        "http://free-proxy.cz/en/proxylist/country/all/http/speed/level1/{range(1,6)}"
+      ]
+    },
+    "use":true
+  },
+  "list.proxylistplus.com": {
+    "renewal":43200,
+    "use":false,
+    "types": {
+      "http":["https://list.proxylistplus.com/Fresh-HTTP-Proxy-List-{range(1,6)}"]
+    }
+  },
+
+  "www.cybersyndrome.net": {
+    "renewal":21600,
+    "types":{
+      "http":["http://www.cybersyndrome.net/pla6.html"]
+    },
+    "use":true
+  },
+
+  "www.ip-adress.com":{
+    "renewal":43200,
+    "use":true,
+    "types":{
+      "http":["https://www.ip-adress.com/proxy-list"]
+        }
+      }
+    },
+  "daily-proxies.com":{
+    "renewal":43200,
+    "use":true,
+    "types":{
+      "nonspecific":["http://proxy-daily.com/{%Y/%m/%d-%m-%Y}-proxy-list-{range(1,5)}/"]
+    }
+  }
+}
+

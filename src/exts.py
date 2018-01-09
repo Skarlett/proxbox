@@ -1,6 +1,5 @@
 from os import walk, path, mkdir
 import logging
-# import Settings
 
 etc_folder = path.join(path.join(path.split(path.dirname(__file__))[0], 'etc'), 'ext')
 

@@ -1,7 +1,5 @@
 import settings
-import logging
 import time
-import errno
 import struct
 import socket
 from requests import get, exceptions
@@ -79,28 +77,8 @@ def discover_protocol(proxy, timeout=settings.global_timeout):
         try:
           if f(proxy.ip, proxy.port, timeout):
             return t, time.time()-start
-        
-        except socket.timeout:
+        except socket.error:
           pass
-        
-        except socket.error as e:
-          if hasattr(e, 'errno'):
-            if not e.errno in (errno.ETIMEDOUT, errno.ECONNABORTED, errno.ECONNREFUSED, errno.EHOSTUNREACH):
-              logging.exception('Exception raised in '+t+' '+e.__class__.__name__)
-          else:
-            logging.exception('Exception raised in ' + t + ' ' + e.__class__.__name__)
-
-        # except Exception as e:
-        #   if hasattr(e, 'errno'):
-        #     if not e.errno in (errno.ETIMEDOUT, errno.ECONNABORTED, errno.ECONNREFUSED, errno.EHOSTUNREACH):
-        #       logging.exception('Exception raised in '+t+' '+e.__class__.__name__)
-        #   else:
-        #     logging.exception('Exception raised in ' + t + ' ' + e.__class__.__name__)
-  
-    
-    # if not Settings.keep_unregonized_protocols and not error:
-    #   proxy.die()
   else:
     proxy.die(False)
-  
   return None, None

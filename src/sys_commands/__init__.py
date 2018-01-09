@@ -13,16 +13,6 @@ class NoAlias(Exception):
   This happens when a function tries to be assigned with no call sign, such as --command
   '''
 
-class Locator:
-  ''' Gets Location data from ip-api.com in json format and appends data to self.'''
-  def __init__(self, ip):
-    self.ip = ip
-    self._request = requests.get('http://ip-api.com/json/'+self.ip)
-    self._data = json.loads(self._request.content)
-    assert self._request.ok
-    for k, v in self._data.items():
-      setattr(self, k, v)
-
 
 class Alias:
   '''Extra layer of abstraction to be used by the help menu'''

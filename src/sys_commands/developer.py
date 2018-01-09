@@ -2,7 +2,7 @@ from standard import online_cnt, uptime, total_cnt
 from __init__ import Command
 from os import system
 
-USE = False
+USE = True
 
 def scrape(parent):
   '''force parent to scrape'''

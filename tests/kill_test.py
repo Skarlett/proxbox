@@ -4,14 +4,15 @@
 # This was a problem in very early beta
 # When sqlite3worker finally gets added, hopefully this test will yield faster
 # results.
-
+# 1.0.1 flaw
 import threading
 from subprocess import call
 from random import choice
 
 def stupid_call():
   while 1:
-    print call(['px'] + choice([['-g', '-b'], ['-oc']]))
+    print call(['python', '../sys_tools/geo'] + choice([['127.0.0.1'], ['1.0.0.0']]))
+
 
 for _ in range(50):
   threading._start_new_thread(stupid_call, tuple())
