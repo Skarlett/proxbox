@@ -32,6 +32,7 @@ else
   echo "Test failed. Stopping installation"
   exit 1
 fi
+chmod +x /home/px/sys_tools/*
 echo "Setting up soft links to /usr/sbin"
 ln -s /home/px/sys_tools/px /usr/sbin/px
 ln -s /home/px/sys_tools/geo /usr/sbin/geo
